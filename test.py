@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from transformers import AutoTokenizer, AutoModel, utils
 import torch
 from tqdm import tqdm
-#from bertviz import model_view, head_view
+from bertviz import model_view, head_view
 utils.logging.set_verbosity_error()  # Suppress standard warnings
 
 
@@ -13,16 +13,15 @@ utils.logging.set_verbosity_error()  # Suppress standard warnings
 #    device = torch.device("cpu")
 #print(f"Using device: {device}")
 model_name = "bigscience/bloom-560m"
-input_text = "Mrs. Dursley, Mr. Dursley, Dudley Dursley"  
 model = AutoModel.from_pretrained(model_name, output_attentions=True)#.to(device)  # Configure model to return attention values
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+input_text = "The Australian search and rescue service is provided by AusSAR, which is part of the Australian Maritime Safety Authority (AMSA)" 
 inputs = tokenizer.encode(input_text, return_tensors='pt')#.to(device)
 with torch.no_grad():
     outputs = model(inputs)  # Run model
     attention = outputs[-1]  # Retrieve attention from model outputs
 tokens = tokenizer.convert_ids_to_tokens(inputs[0])  # Convert input ids to token strings
-#head_view(attention, tokens)  # Display model view
-attention_weights = attention[18][:, 13, :, :] # Get the first layer [0], and the first attention head's attention
 
 def visualize_single(att_map, sentence):
     """
@@ -30,7 +29,7 @@ def visualize_single(att_map, sentence):
     """
     
     plt.figure(figsize=(16, 12))
-    plt.imshow(att_map, cmap='Reds')
+    plt.imshow(att_map[0], cmap='Reds')
     plt.xticks(range(len(sentence)), sentence, rotation=60, fontsize=12)
     plt.yticks(range(len(sentence)), sentence, fontsize=12)
 
@@ -50,8 +49,11 @@ def visualize_all(attn, n_layers=12, n_heads=12, title="", figname='attention.pn
     fig.suptitle(title, fontsize=20)
     plt.savefig(figname, dpi=400)
 
-visualize_all(attention, n_layers=24, n_heads=16)
-visualize_single(attention_weights[0], tokens)
+model_view(attention, tokens)  # Display model view
+
+visualize_all(attention, n_layers=24, n_heads=16, figname='test.png')
+attention_weights = attention[20][:, 12, :, :] # Get the first layer [0], and the first attention head's attention
+visualize_single(attention_weights, tokens)
 
 
 
