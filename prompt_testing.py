@@ -12,19 +12,9 @@ with open('pawsx_en_write_out_info.json', 'r', encoding="utf-8") as file:
     data = json.load(file)
 
 
-model_name = "bigscience/bloom-7b1"
+model_name = "bigscience/bloom-560m"
 model = AutoModel.from_pretrained(model_name, output_attentions=True)#.to(device)  # Configure model to return attention values
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-
-def viz_bert(prompt, model=model, tokenizer=tokenizer):
-    inputs = tokenizer.encode(prompt, return_tensors='pt')#.to(device)
-    with torch.no_grad():
-        outputs = model(inputs) 
-        attention = outputs[-1]  # Retrieve attention from model outputs
-    tokens = tokenizer.convert_ids_to_tokens(inputs[0])
-    model_view(attention, tokens) 
-    
 
 def random_sample(data):
 # Step 2: Randomly select 10 dictionaries
@@ -52,19 +42,27 @@ def shortest_sample(data, n=5):
         prompts += [prompt_0, prompt_1]
     return prompts
 
-def visualize_singles(prompts, model, tokenizer, layer=16, head=27):
-    
-    for idx, prompt in enumerate(prompts):
-            inputs = tokenizer.encode(prompt, return_tensors='pt')
-            with torch.no_grad():
-                outputs = model(inputs)  # Run model
-                attention = outputs[-1]  # Retrieve attention from model outputs
-            attention_weights = attention[layer][:, head, :, :] # Get the first layer [0], and the first attention head's attention
+def visualize_singles(tokens, attentions, layer=16, head=27):
+    for idx, (token, attention) in enumerate(zip(tokens, attentions)):
+        attention_weights = attention[layer][:, head, :, :] # Get the first layer [0], and the first attention head's attention
+        visualize_single(attention_weights[0], token, figname=f"attention_doc_{idx}_prompt.png")
 
-            tokens = tokenizer.convert_ids_to_tokens(inputs[0])  # Convert input ids to token strings
-            #head_view(attention, tokens)  # Display model view
-            # attention_weights = attention[18][:, 13, :, :] # Get the first layer [0], and the first attention head's attention
-            visualize_single(attention_weights[0],tokens, figname=f"attention_doc_{idx}_prompt.png")
+def get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True):
+    inputs = tokenizer.encode(prompt, return_tensors='pt')#.to(device)
+    tokens = tokenizer.convert_ids_to_tokens(inputs[0])
+    with torch.no_grad():
+        outputs = model(inputs) 
+        attention = outputs[-1]
+    if not first_token:
+        attention = delete_first_token(attention)    
+    return attention, tokens
+
+def delete_first_token(attention):
+    for layer in attention:
+        for i in range(layer.shape[1]):
+            head = layer[:, i, :, :]
+            head[:, :, 0] = 0
+    return attention
 
 if __name__ == "__main__":
     #random_sample(data)
