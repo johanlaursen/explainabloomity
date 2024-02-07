@@ -11,6 +11,8 @@ from bertviz import model_view, head_view
 with open('pawsx_en_write_out_info.json', 'r', encoding="utf-8") as file:
     data = json.load(file)
 
+YES="ĠYes"
+NO="ĠNo"
 
 model_name = "bigscience/bloom-560m"
 model = AutoModel.from_pretrained(model_name, output_attentions=True)#.to(device)  # Configure model to return attention values
@@ -47,6 +49,7 @@ def visualize_singles(tokens, attentions, layer=16, head=27):
         attention_weights = attention[layer][:, head, :, :] # Get the first layer [0], and the first attention head's attention
         visualize_single(attention_weights[0], token, figname=f"attention_doc_{idx}_prompt.png")
 
+
 def get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True):
     inputs = tokenizer.encode(prompt, return_tensors='pt')#.to(device)
     tokens = tokenizer.convert_ids_to_tokens(inputs[0])
@@ -56,6 +59,19 @@ def get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True):
     if not first_token:
         attention = delete_first_token(attention)    
     return attention, tokens
+
+def get_token_weight(attention, token_idx):
+    """Returns a matrix layers x heads, where each element is the total weight
+    given to a specific token in the input sequence."""
+    
+    # matrix layers, heads to store how much weight has been given to specific token
+    weights = torch.zeros(len(attention), attention[0].shape[1])
+    for layer_id, layer in enumerate(attention):
+        for i in range(layer.shape[1]):
+            head = layer[:, i, :, :]
+            weights[layer_id, i] = head[:, :, token_idx].sum()
+            
+    return weights
 
 def delete_first_token(attention):
     for layer in attention:
