@@ -44,11 +44,10 @@ def shortest_sample(data, n=5):
         prompts += [prompt_0, prompt_1]
     return prompts
 
-def visualize_singles(tokens, attentions, layer=16, head=27):
+def visualize_singles(attentions, tokens, layer=16, head=27):
     for idx, (token, attention) in enumerate(zip(tokens, attentions)):
         attention_weights = attention[layer][:, head, :, :] # Get the first layer [0], and the first attention head's attention
         visualize_single(attention_weights[0], token, figname=f"attention_doc_{idx}_prompt.png")
-
 
 def get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True):
     inputs = tokenizer.encode(prompt, return_tensors='pt')#.to(device)
@@ -59,6 +58,13 @@ def get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True):
     if not first_token:
         attention = delete_first_token(attention)    
     return attention, tokens
+
+def delete_first_token(attention):
+    for layer in attention:
+        for i in range(layer.shape[1]):
+            head = layer[:, i, :, :]
+            head[:, :, 0] = 0
+    return attention
 
 def get_token_weight(attention, token_idx):
     """Returns a matrix layers x heads, where each element is the total weight
@@ -72,13 +78,6 @@ def get_token_weight(attention, token_idx):
             weights[layer_id, i] = head[:, :, token_idx].sum()
             
     return weights
-
-def delete_first_token(attention):
-    for layer in attention:
-        for i in range(layer.shape[1]):
-            head = layer[:, i, :, :]
-            head[:, :, 0] = 0
-    return attention
 
 if __name__ == "__main__":
     #random_sample(data)
