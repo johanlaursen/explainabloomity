@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import torch
+import random
 
 def visualize_single(att_map, sentence, figname):
     """
