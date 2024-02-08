@@ -2,6 +2,13 @@ import matplotlib.pyplot as plt
 import torch
 import random
 
+import numpy as np
+from transformers import AutoTokenizer, AutoModel, utils
+
+model_name = "bigscience/bloom-560m"
+model = AutoModel.from_pretrained(model_name, output_attentions=True)#.to(device)  # Configure model to return attention values
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+
 def visualize_single(att_map, sentence, figname):
     """
     Attention map for a given layer and head
