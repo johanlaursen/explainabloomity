@@ -37,7 +37,7 @@ def visualize_some(attention, tokens, head_list, random_sample=0):
         visualize_single(attention[head_list[0]][:, head_list[1], :, :], tokens)
         return
 
-    if len(head_list) > random_sample:
+    if random_sample > len(head_list):
         head_list = random.sample(head_list, random_sample)
 
     num_heads = len(head_list)
