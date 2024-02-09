@@ -24,18 +24,47 @@ def visualize_single(att_map, sentence, figname):
 
 def visualize_some(attention, tokens, head_list):
     """
-    head_list is a list of tuples (layer, head) to visualize
+    Visualize attention maps for specified heads.
+    
+    Parameters:
+    - attention: A nested list (or array) where each element is a layer and each layer contains
+                 head matrices with dimensions [num_heads, seq_len, seq_len].
+    - tokens: A list of tokens corresponding to the sequence length.
+    - head_list: A list of tuples (layer, head) to visualize.
     """
-    fig, axes = plt.subplots(1, len(head_list), figsize=(20, 10))
+
+    # If there is only one head to plot, plot single.
+    if type(head_list) == tuple:
+        visualize_single(attention[head_list[0]][:, head_list[1], :, :], tokens)
+        return
+
+    num_heads = len(head_list)
+    num_columns = min(num_heads, 4)
+    num_rows = (num_heads + 3) // 4
+
+    fig_width = 5 * num_columns
+    fig_height = 5 * num_rows
+    
+    fig, axes = plt.subplots(num_rows, num_columns, figsize=(fig_width, fig_height))
+
+    if num_rows > 1 or num_columns > 1:
+        axes = axes.flatten()
+
     for i, head in enumerate(head_list):
         att_map = attention[head[0]][0, head[1], :, :]
-        axes[i].imshow(att_map, cmap='Reds')
-        axes[i].set_title(f"Layer {head[0]} Head {head[1]}")
-        axes[i].set_xticks(range(len(tokens)))
-        axes[i].set_yticks(range(len(tokens)))
-        axes[i].set_xticklabels(tokens, rotation=60, fontsize=12)
-        axes[i].set_yticklabels(tokens, fontsize=12)
-        axes[i].grid(False)
+        ax = axes[i]
+        ax.imshow(att_map, cmap='Reds')
+        ax.set_title(f"Layer {head[0]} Head {head[1]}")
+        ax.set_xticks(range(len(tokens)))
+        ax.set_yticks(range(len(tokens)))
+        ax.set_xticklabels(tokens, rotation=60, fontsize=10)
+        ax.set_yticklabels(tokens, fontsize=10)
+        ax.grid(False)
+
+    for ax in axes[num_heads:]:
+        ax.axis('off')        
+    
+    plt.tight_layout()
     plt.show()
 
 def tensor_to_vector(tensor):
@@ -101,3 +130,17 @@ def attention_multiple_inputs(prompts):
     # Convert head_attentions dict to a numpy array of np.arrays
     head_attentions = np.array(list(head_attentions.values()))
     return head_attentions
+
+def get_group_dict(clusters, n_layers=24, n_heads=16):
+    """
+    Takes in output of fcluster(hc_linkage)
+    Returns a dict with group number as key and list of tuples, where each tuple is (layer_id, head_id) as value
+    """
+    group_dict = dict()
+    for i in range(n_layers):
+        for j in range(n_heads):
+            if clusters[i*n_heads + j] not in group_dict:
+                group_dict[clusters[i*n_heads + j]] = [(i, j)]
+            else:
+                group_dict[clusters[i*n_heads + j]].append((i, j))
+    return group_dict
