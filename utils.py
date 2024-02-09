@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import torch
 import random
-
 import numpy as np
 from transformers import AutoTokenizer, AutoModel, utils
 
@@ -22,7 +21,7 @@ def visualize_single(att_map, sentence, figname):
     plt.grid(False)
     plt.savefig(figname, dpi=400)
 
-def visualize_some(attention, tokens, head_list):
+def visualize_some(attention, tokens, head_list, random_sample=0):
     """
     Visualize attention maps for specified heads.
     
@@ -38,7 +37,11 @@ def visualize_some(attention, tokens, head_list):
         visualize_single(attention[head_list[0]][:, head_list[1], :, :], tokens)
         return
 
+    if len(head_list) > random_sample:
+        head_list = random.sample(head_list, random_sample)
+
     num_heads = len(head_list)
+
     num_columns = min(num_heads, 4)
     num_rows = (num_heads + 3) // 4
 
