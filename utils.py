@@ -22,6 +22,21 @@ def visualize_single(att_map, sentence, figname):
     plt.grid(False)
     plt.savefig(figname, dpi=400)
 
+def visualize_some(attention, tokens, head_list):
+    """
+    head_list is a list of tuples (layer, head) to visualize
+    """
+    fig, axes = plt.subplots(1, len(head_list), figsize=(20, 10))
+    for i, head in enumerate(head_list):
+        att_map = attention[head[0]][0, head[1], :, :]
+        axes[i].imshow(att_map, cmap='Reds')
+        axes[i].set_title(f"Layer {head[0]} Head {head[1]}")
+        axes[i].set_xticks(range(len(tokens)))
+        axes[i].set_yticks(range(len(tokens)))
+        axes[i].set_xticklabels(tokens, rotation=60, fontsize=12)
+        axes[i].set_yticklabels(tokens, fontsize=12)
+        axes[i].grid(False)
+    plt.show()
 
 def tensor_to_vector(tensor):
     """Converts 2-D tensor into a vector. 
