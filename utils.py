@@ -21,7 +21,7 @@ def visualize_single(att_map, sentence, figname):
     plt.grid(False)
     plt.savefig(figname, dpi=400)
 
-def visualize_some(attention, tokens, head_list, random_sample=0):
+def visualize_some(attention, tokens, head_list, random_sample=0, cols=4):
     """
     Visualize attention maps for specified heads.
     
@@ -42,8 +42,8 @@ def visualize_some(attention, tokens, head_list, random_sample=0):
 
     num_heads = len(head_list)
 
-    num_columns = min(num_heads, 4)
-    num_rows = (num_heads + 3) // 4
+    num_columns = min(num_heads, cols)
+    num_rows = (num_heads + 3) // cols
 
     fig_width = 5 * num_columns
     fig_height = 5 * num_rows
@@ -68,6 +68,54 @@ def visualize_some(attention, tokens, head_list, random_sample=0):
         ax.axis('off')        
     
     plt.tight_layout()
+    plt.show()
+
+def visualize_n_inputs(attention_dict, layer_head_combinations, n=5):
+    """
+    Visualize attention maps for specified layer-head combinations, with each column showing the same input for different heads.
+    
+    Parameters:
+    - attention_dict: A dictionary where keys are tuples (layer_id, head_id)
+      and values are lists of attention maps. Output of attention_dict_multiple_inputs()
+    - layer_head_combinations: A list of tuples in the form (layer_id, head_id)
+    - n: number of inputs to visualize per column
+    """
+
+    first_key = list(attention_dict.keys())[0]
+    if len(attention_dict[first_key]) > n:
+        indices = random.sample(range(len(attention_dict[first_key])), n)
+    else:
+        indices = range(len(attention_dict[first_key]))
+
+    num_rows = len(layer_head_combinations)
+    num_columns = n 
+
+    fig_width = 5 * num_columns
+    fig_height = 5 * num_rows
+
+    _, axes = plt.subplots(num_rows, num_columns, figsize=(fig_width, fig_height), layout="constrained")
+    
+    if num_rows > 1 or num_columns > 1:
+        axes = axes.flatten()
+    else:
+        axes = [axes]
+
+    for row, (layer_id, head_id) in enumerate(layer_head_combinations):
+        for col, idx in enumerate(indices):
+            ax_idx = row * num_columns + col
+            ax = axes[ax_idx]
+            attention_map = attention_dict[(layer_id, head_id)][idx]
+            ax.imshow(attention_map, cmap='Reds')
+            ax.grid(False)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            if row == 0:
+                ax.set_title(f"Input: {idx}", fontsize=20)
+        axes[row * num_columns].set_ylabel(f'Layer {layer_id} - Head {head_id}', fontsize=20, rotation=90)
+
+    #plt.tight_layout(rect=[0, 0.01, 1, 1])  # Leave space for the super title
+    #fig.suptitle("Attention Maps Visualization", fontsize=16, va='bottom')
+
     plt.show()
 
 def tensor_to_vector(tensor):
@@ -115,12 +163,7 @@ def get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True):
         attention = delete_first_token(attention)    
     return attention, tokens
 
-def attention_multiple_inputs(prompts):
-    """
-    Takes in a list of prompts and returns the attention maps for each prompt
-    f.x. prompts = random_sample(data)
-    """
-    attention_maps = [x[0] for x in [get_attention(prompt) for prompt in prompts]]
+def attention_vector_multiple_inputs(attention_maps):
     head_attentions = dict()
     for attention_map in attention_maps:
         for layer_idx, layer in enumerate(attention_map):
@@ -130,8 +173,21 @@ def attention_multiple_inputs(prompts):
                     head_attentions[(layer_idx, head_idx)] = att_map_vector
                 else:
                     head_attentions[(layer_idx, head_idx)] = torch.cat((head_attentions[(layer_idx, head_idx)], att_map_vector))
-    # Convert head_attentions dict to a numpy array of np.arrays
+    
     head_attentions = np.array(list(head_attentions.values()))
+    return head_attentions
+
+def attention_dict_multiple_inputs(attention_maps):
+    head_attentions = dict()
+    for attention_map in attention_maps:
+        for layer_idx, layer in enumerate(attention_map):
+            for head_idx in range(layer.shape[1]):
+                att_map = layer[0, head_idx, :, :]
+                if (layer_idx, head_idx) not in head_attentions:
+                    head_attentions[(layer_idx, head_idx)] = [att_map]
+                else:
+                    head_attentions[(layer_idx, head_idx)].append(att_map)
+    
     return head_attentions
 
 def get_group_dict(clusters, n_layers=24, n_heads=16):
