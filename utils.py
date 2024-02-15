@@ -203,3 +203,18 @@ def get_group_dict(clusters, n_layers=24, n_heads=16):
             else:
                 group_dict[clusters[i*n_heads + j]].append((i, j))
     return group_dict
+
+
+def get_attention_weights(model,layer,head):
+    """Get attention weights for a specific layer and head"""
+    bloomblock = model.h[layer]
+    attention_weight = bloomblock.self_attention.query_key_value.weight
+    hidden_size = model.config.hidden_size
+    n_head = model.config.n_head
+    hidden_size = model.config.hidden_size
+    # hiddensize, 3, n_head, head size
+    # query key value 
+    attention_weight = attention_weight.view(hidden_size, 3, n_head, hidden_size//n_head)
+    
+    head_attention = attention_weight[:,:,head,:]
+    return head_attention
