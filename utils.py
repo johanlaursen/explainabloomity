@@ -223,3 +223,23 @@ def get_attention_weights(model,layer,head):
     head_attention = attention_weight[head,:,:,:]
     head_bias = attention_bias[head,:,:]
     return head_attention, head_bias
+
+
+def extract_metrics(results_dict):
+    # Extracting the 'results' dictionary
+    metrics = results_dict.get('results', {})
+    # Flattening the nested structure
+    flat_metrics = {}
+    for test, scores in metrics.items():
+        for metric, value in scores.items():
+            flat_metrics[f'{test}_{metric}'] = value
+    return flat_metrics
+
+
+def get_dataframe(results_dict):
+    return pd.DataFrame([extract_metrics(results_dict)])
+
+def save_results(name, results_dict):
+    print(name, " ", results_dict)
+    df = get_dataframe(results_dict)
+    df.to_csv("results/" + name + '.csv')
