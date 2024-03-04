@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import torch
 import random
 import numpy as np
+from collections import defaultdict
 from transformers import AutoTokenizer, AutoModel, utils
 from scipy.spatial.distance import pdist, squareform
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
@@ -234,7 +235,7 @@ def get_clustering_dict(prompts, n_groups=8, metric='cosine', n_layers=24, n_hea
     layer_clusters_dict = dict()
     for i in range(n_layers):
         group_indices = defaultdict(list)
-        for index, group in enumerate(clustering_dict[i]):
+        for index, group in enumerate(clusters[i]):
             group_indices[group].append(index)
 
         layer_clusters_dict[i] = list(group_indices.values())
