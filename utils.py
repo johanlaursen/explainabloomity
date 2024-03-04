@@ -224,6 +224,38 @@ def get_attention_weights(model,layer,head):
     head_bias = attention_bias[head,:,:]
     return head_attention, head_bias
 
+def duplicate_prune(model, source_layer, source_head, target_layer, target_head):
+    """Given source layer and head, duplicate the attention weights and bias to the target layer and head
+    Args: 
+        source_layer: int,
+        source_head: int,
+        target_layer: int,
+        target_head: int
+    Returns:
+        model: updated model with attention weights and bias duplicated to the target layer and head
+    """
+    
+    source_weight, source_bias = get_attention_weights(model, source_layer, source_head)
+    target_layer= 0
+    target_head = 1
+    target_bloom_block = model.h[target_layer]
+    attention_weight = target_bloom_block.self_attention.query_key_value.weight
+    attention_bias = target_bloom_block.self_attention.query_key_value.bias
+    hidden_size = model.config.hidden_size
+    n_head = model.config.n_head
+    hidden_size = model.config.hidden_size
+    # hiddensize, 3, n_head, head size
+    # query key value 
+    attention_weight = attention_weight.view(n_head, 3,hidden_size//n_head, hidden_size)
+    attention_bias = attention_bias.view(n_head, 3, hidden_size//n_head)
+
+    with torch.no_grad():
+        attention_weight[target_head] = source_weight
+        attention_bias[target_head] = source_bias
+        
+    target_bloom_block.self_attention.query_key_value.weight = torch.nn.Parameter(attention_weight.view_as(target_bloom_block.self_attention.query_key_value.weight))
+    target_bloom_block.self_attention.query_key_value.bias = torch.nn.Parameter(attention_bias.view_as(target_bloom_block.self_attention.query_key_value.bias))
+    return model
 
 def extract_metrics(results_dict):
     # Extracting the 'results' dictionary
