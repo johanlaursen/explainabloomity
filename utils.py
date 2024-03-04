@@ -3,6 +3,8 @@ import torch
 import random
 import numpy as np
 from transformers import AutoTokenizer, AutoModel, utils
+from scipy.spatial.distance import pdist, squareform
+from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
 
 model_name = "bigscience/bloom-560m"
 model = AutoModel.from_pretrained(model_name, output_attentions=True)#.to(device)  # Configure model to return attention values
