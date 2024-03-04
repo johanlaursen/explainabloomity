@@ -214,6 +214,30 @@ def get_group_dict(clusters, n_layers=24, n_heads=16):
                 group_dict[clusters[i*n_heads + j]].append((i, j))
     return group_dict
 
+def get_clustering_dict(prompts, n_groups=8, metric='cosine', n_layers=24, n_heads=16):
+    """
+    Takes in a list of prompts. Returns a dictionary with:
+    - Layer number as key
+    - List of lists representing clustered attention heads
+    """
+    attention_maps = [x[0] for x in [get_attention(prompt) for prompt in prompts]]
+    attention_vectors = attention_vector_multiple_inputs(attention_maps)
+    clusters = dict()
+    for i in range(n_layers):
+        layer_heads = attention_vectors[i*n_heads:(i+1)*n_heads]
+        distance_matrix = squareform(pdist(layer_heads, metric=metric))
+        hc_linkage = linkage(distance_matrix, method='ward')
+        clusters[i] = fcluster(hc_linkage, n_groups, criterion='maxclust')
+
+    layer_clusters_dict = dict()
+    for i in range(n_layers):
+        group_indices = defaultdict(list)
+        for index, group in enumerate(clustering_dict[i]):
+            group_indices[group].append(index)
+
+        layer_clusters_dict[i] = list(group_indices.values())
+
+    return layer_clusters_dict
 
 def get_attention_weights(model,layer,head):
     """Get attention weights for a specific layer and head
@@ -276,7 +300,6 @@ def extract_metrics(results_dict):
         for metric, value in scores.items():
             flat_metrics[f'{test}_{metric}'] = value
     return flat_metrics
-
 
 def get_dataframe(results_dict):
     return pd.DataFrame([extract_metrics(results_dict)])
