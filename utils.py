@@ -163,6 +163,14 @@ def get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True):
         attention = delete_first_token(attention)    
     return attention, tokens
 
+def get_attention_multiple_inputs(prompts, model=model, tokenizer=tokenizer, first_token=True):
+    inputs = tokenizer(prompts, return_tensors='pt', padding=True, truncation=True)
+    with torch.no_grad():
+        outputs = model(**inputs)
+        attention = outputs[-1]
+    return attention
+    
+
 def attention_vector_multiple_inputs(attention_maps):
     head_attentions = dict()
     for attention_map in attention_maps:
