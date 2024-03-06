@@ -172,18 +172,21 @@ def get_attention_multiple_inputs(prompts, model, tokenizer, first_token=True):
         outputs = model(**inputs)
         attention = outputs[-1]
     return attention
-    
 
 def attention_vector_multiple_inputs(attention_maps):
     head_attentions = dict()
-    for attention_map in attention_maps:
-        for layer_idx, layer in enumerate(attention_map):
-            for head_idx in range(layer.shape[1]):
-                att_map_vector = tensor_to_vector(layer[0, head_idx, :, :])
-                if (layer_idx, head_idx) not in head_attentions:
-                    head_attentions[(layer_idx, head_idx)] = att_map_vector
+    num_prompts = attention_maps[0].shape[0]  # Get the number of prompts
+
+    for prompt_idx in range(num_prompts):
+        for layer_idx, layer in enumerate(attention_maps):
+            for head_idx in range(layer.shape[1]):  # Number of heads
+                att_map_vector = tensor_to_vector(layer[prompt_idx, head_idx, :, :])
+                key = (layer_idx, head_idx)
+
+                if key not in head_attentions:
+                    head_attentions[key] = att_map_vector
                 else:
-                    head_attentions[(layer_idx, head_idx)] = torch.cat((head_attentions[(layer_idx, head_idx)], att_map_vector))
+                    head_attentions[key] = torch.cat((head_attentions[key], att_map_vector))
     
     head_attentions = np.array(list(head_attentions.values()))
     return head_attentions
@@ -217,11 +220,9 @@ def get_group_dict(clusters, n_layers=24, n_heads=16):
 
 def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', n_layers=24, n_heads=16):
     """
-    Takes in a list of prompts. Returns a dictionary with:
-    - Layer number as key
-    - List of lists representing clustered attention heads
+    Returns a dictionary with layer number as key and list of attention heads as value
     """
-    attention_maps = [x[0] for x in [get_attention(prompt, model, tokenizer) for prompt in prompts]]
+    attention_maps = get_attention_multiple_inputs(prompts, model, tokenizer, first_token=True)
     attention_vectors = attention_vector_multiple_inputs(attention_maps)
     clusters = dict()
     for i in range(n_layers):
