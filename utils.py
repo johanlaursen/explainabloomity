@@ -3,7 +3,7 @@ import torch
 import random
 import numpy as np
 import pandas as pd
-from collections import defaultdict
+from collections import defaultdict, Counter
 from transformers import AutoTokenizer, AutoModel, utils
 from scipy.spatial.distance import pdist, squareform
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
@@ -290,7 +290,7 @@ def duplicate_prune(model, source_layer, source_head, target_layer, target_head)
     model.h[target_layer].self_attention.query_key_value.bias = torch.nn.Parameter(attention_bias.view_as(target_bloom_block.self_attention.query_key_value.bias))
     return model
 
-def duplicate_prune_model(prompts, model_name, model, tokenizer, n_groups=8, metric='euclidean', verbose=True):
+def duplicate_prune_model(prompts, model_name, model, tokenizer, prune_percent=0.5, metric='euclidean', verbose=True):
     '''
     Duplicate prunes a model based on the attention scores of the heads.
     The attention scores are calculated for the prompts and the heads are clustered based on cosine similarity.
@@ -301,7 +301,7 @@ def duplicate_prune_model(prompts, model_name, model, tokenizer, n_groups=8, met
         model_name: str, filename of the pruned model in models folder
         model: model to prune (currently only implemented for bloom models)
         tokenizer: tokenizer for the model
-        n_groups: int, number of groups to cluster heads into based on number of heads per layer
+        prune_percent: float, percentage of heads to prune
         metric: str, metric to use for comparing heads within clusters. Options are 'euclidean', 'cosine' and 'random'
         verbose: bool, whether to print the number of clusters of each size
     Returns:
@@ -310,15 +310,17 @@ def duplicate_prune_model(prompts, model_name, model, tokenizer, n_groups=8, met
     '''
     
     attentions = get_attention_multiple_inputs(prompts, model, tokenizer)
-
+    n_head = model.config.n_head
+    n_layers = model.config.n_layers
+    n_groups = n_head - int(n_head * prune_percent)
     # attention is tuple of len(layers) where 
     # each element is a tensor of shape 
     # (num_prompts, num_heads, num_tokens, num_tokens)
 
-    layers_clustering_dict = get_clustering_dict(prompts, model, tokenizer, n_groups=n_groups)
+    layers_clustering_dict = get_clustering_dict(prompts, model, tokenizer,n_layers=n_layers, n_groups=n_groups)
     counter = Counter()
-    for layer_number in tqdm(layers_clustering_dict.keys()):
-        squaref = squareform(pdist(attentions[layer_number].view(16, -1), metric=metric))
+    for layer_number in layers_clustering_dict.keys():
+        squaref = squareform(pdist(attentions[layer_number].view(n_head, -1), metric=metric))
         layer_clusters = layers_clustering_dict[layer_number]
         for group in layer_clusters:
             group_scores = defaultdict(int)
@@ -350,7 +352,7 @@ def duplicate_prune_model(prompts, model_name, model, tokenizer, n_groups=8, met
                 
     if verbose:
         print(counter)
-    torch.save(model.state_dict(), f'./models/{model_name}_model_weights.pth')
+    model.save_pretrained(f'./models/{model_name}_{metric}_{n_groups}')
 
 
 def extract_metrics(results_dict):
