@@ -215,13 +215,13 @@ def get_group_dict(clusters, n_layers=24, n_heads=16):
                 group_dict[clusters[i*n_heads + j]].append((i, j))
     return group_dict
 
-def get_clustering_dict(prompts, n_groups=8, metric='cosine', n_layers=24, n_heads=16):
+def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', n_layers=24, n_heads=16):
     """
     Takes in a list of prompts. Returns a dictionary with:
     - Layer number as key
     - List of lists representing clustered attention heads
     """
-    attention_maps = [x[0] for x in [get_attention(prompt) for prompt in prompts]]
+    attention_maps = [x[0] for x in [get_attention(prompt, model, tokenizer) for prompt in prompts]]
     attention_vectors = attention_vector_multiple_inputs(attention_maps)
     clusters = dict()
     for i in range(n_layers):
