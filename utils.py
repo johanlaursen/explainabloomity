@@ -272,8 +272,6 @@ def duplicate_prune(model, source_layer, source_head, target_layer, target_head)
     """
     
     source_weight, source_bias = get_attention_weights(model, source_layer, source_head)
-    target_layer= 0
-    target_head = 1
     target_bloom_block = model.h[target_layer]
     attention_weight = target_bloom_block.self_attention.query_key_value.weight
     attention_bias = target_bloom_block.self_attention.query_key_value.bias
@@ -292,6 +290,69 @@ def duplicate_prune(model, source_layer, source_head, target_layer, target_head)
     model.h[target_layer].self_attention.query_key_value.weight = torch.nn.Parameter(attention_weight.view_as(target_bloom_block.self_attention.query_key_value.weight))
     model.h[target_layer].self_attention.query_key_value.bias = torch.nn.Parameter(attention_bias.view_as(target_bloom_block.self_attention.query_key_value.bias))
     return model
+
+def duplicate_prune_model(prompts, model_name, model, tokenizer, n_groups=8, metric='euclidean', verbose=True):
+    '''
+    Duplicate prunes a model based on the attention scores of the heads.
+    The attention scores are calculated for the prompts and the heads are clustered based on cosine similarity.
+    The heads within groups are then compared using metric and the head with the highest similarity to other heads in cluster is kepts
+    
+    Args:
+        prompts: list of strings, prompts to calculate attention scores for
+        model_name: str, filename of the pruned model in models folder
+        model: model to prune (currently only implemented for bloom models)
+        tokenizer: tokenizer for the model
+        n_groups: int, number of groups to cluster heads into based on number of heads per layer
+        metric: str, metric to use for comparing heads within clusters. Options are 'euclidean', 'cosine' and 'random'
+        verbose: bool, whether to print the number of clusters of each size
+    Returns:
+        None
+        saves the model to model folder
+    '''
+    
+    attentions = get_attention_multiple_inputs(prompts, model, tokenizer)
+
+    # attention is tuple of len(layers) where 
+    # each element is a tensor of shape 
+    # (num_prompts, num_heads, num_tokens, num_tokens)
+
+    layers_clustering_dict = get_clustering_dict(prompts, model, tokenizer, n_groups=n_groups)
+    counter = Counter()
+    for layer_number in tqdm(layers_clustering_dict.keys()):
+        squaref = squareform(pdist(attentions[layer_number].view(16, -1), metric=metric))
+        layer_clusters = layers_clustering_dict[layer_number]
+        for group in layer_clusters:
+            group_scores = defaultdict(int)
+            counter.update([len(group)])
+            if len(group) <= 1:
+                continue
+            if len(group) == 2:
+                # with 2 heads just keep the first 1
+                head_to_keep = group[0]
+            else:
+                if metric == 'random':
+                    head_to_keep = random.choice(group)
+                else:
+                    for head_id in group:
+                        for head_id_2 in group:
+                            if head_id == head_id_2:
+                                continue
+                            group_scores[head_id] += squaref[head_id, head_id_2]
+                    if metric == 'euclidean':
+                        head_to_keep = min(group_scores, key=lambda k: group_scores[k])
+                    elif metric == 'cosine':
+                        head_to_keep = max(group_scores, key=lambda k: group_scores[k])
+                    
+            for head in group:
+                if head == head_to_keep:
+                    continue
+                head_to_remove = head
+                model = duplicate_prune(model, source_layer=layer_number, source_head=head_to_keep, target_layer=layer_number, target_head=head_to_remove)
+                
+    if verbose:
+        print(counter)
+    torch.save(model.state_dict(), f'./models/{model_name}_model_weights.pth')
+
 
 def extract_metrics(results_dict):
     # Extracting the 'results' dictionary
