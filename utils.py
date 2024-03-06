@@ -153,7 +153,7 @@ def delete_first_token(attention):
             head[:, :, 0] = 0
     return attention
 
-def get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True):
+def get_attention(prompt, model, tokenizer, first_token=True):
     inputs = tokenizer.encode(prompt, return_tensors='pt')#.to(device)
     tokens = tokenizer.convert_ids_to_tokens(inputs[0])
     with torch.no_grad():
@@ -163,7 +163,7 @@ def get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True):
         attention = delete_first_token(attention)    
     return attention, tokens
 
-def get_attention_multiple_inputs(prompts, model=model, tokenizer=tokenizer, first_token=True):
+def get_attention_multiple_inputs(prompts, model, tokenizer, first_token=True):
     """Returns tuple of len(layers) attention maps for each layer 
     each attention map is of shape (len(prompts), num_heads, max_seq_len, max_seq_len)"""
     inputs = tokenizer(prompts, return_tensors='pt', padding=True, truncation=True)
