@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import torch
 import random
 import numpy as np
+import pandas as pd
 from collections import defaultdict
 from transformers import AutoTokenizer, AutoModel, utils
 from scipy.spatial.distance import pdist, squareform
