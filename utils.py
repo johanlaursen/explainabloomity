@@ -7,9 +7,6 @@ from transformers import AutoTokenizer, AutoModel, utils
 from scipy.spatial.distance import pdist, squareform
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
 
-model_name = "bigscience/bloom-560m"
-model = AutoModel.from_pretrained(model_name, output_attentions=True)#.to(device)  # Configure model to return attention values
-tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 def visualize_single(att_map, sentence, figname):
     """
@@ -290,8 +287,8 @@ def duplicate_prune(model, source_layer, source_head, target_layer, target_head)
         attention_weight[target_head] = source_weight
         attention_bias[target_head] = source_bias
         
-    target_bloom_block.self_attention.query_key_value.weight = torch.nn.Parameter(attention_weight.view_as(target_bloom_block.self_attention.query_key_value.weight))
-    target_bloom_block.self_attention.query_key_value.bias = torch.nn.Parameter(attention_bias.view_as(target_bloom_block.self_attention.query_key_value.bias))
+    model.h[target_layer].self_attention.query_key_value.weight = torch.nn.Parameter(attention_weight.view_as(target_bloom_block.self_attention.query_key_value.weight))
+    model.h[target_layer].self_attention.query_key_value.bias = torch.nn.Parameter(attention_bias.view_as(target_bloom_block.self_attention.query_key_value.bias))
     return model
 
 def extract_metrics(results_dict):
