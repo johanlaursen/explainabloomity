@@ -28,13 +28,19 @@ def evaluate(model_path,
     "--model_args", f"pretrained={model_path}",
     "--tasks", task,
     "--batch_size", "auto",
-    "--max_batch_size", 64,
-    "--use_cache", f"lm_cache/{model_name}",
+    "--max_batch_size", "64",
+    # "--use_cache", f"lm_cache/{model_name}", # Massive slowdown from this
     "--device", device,
     "--output_path", f"results/{model_name}",
-    "--num_fewshot", 0
+    "--num_fewshot", "0",
+    "-w"
     ]
     try:
-        subprocess.run(command)
-    except:
-        print("Error running lm_eval")
+        subprocess.run(command, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running lm_eval: {e}")
+        print(f"Command '{' '.join(e.cmd)}' returned non-zero exit status {e.returncode}.")
+        if e.output:
+            print(f"Output: {e.output}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")

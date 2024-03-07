@@ -306,13 +306,13 @@ def duplicate_prune_model(prompts, model_name, model, tokenizer, prune_percent=0
         metric: str, metric to use for comparing heads within clusters. Options are 'euclidean', 'cosine' and 'random'
         verbose: bool, whether to print the number of clusters of each size
     Returns:
-        None
+        path: str, path where the model is saved. Also
         saves the model to model folder
     '''
     
     attentions = get_attention_multiple_inputs(prompts, model, tokenizer)
     n_head = model.config.n_head
-    n_layers = model.config.n_layers
+    n_layers = model.config.n_layer
     n_groups = n_head - int(n_head * prune_percent)
     # attention is tuple of len(layers) where 
     # each element is a tensor of shape 
@@ -353,7 +353,10 @@ def duplicate_prune_model(prompts, model_name, model, tokenizer, prune_percent=0
                 
     if verbose:
         print(counter)
-    model.save_pretrained(f'./models/{model_name}_{metric}_{n_groups}')
+    path = f'./models/{model_name}_{metric}_{prune_percent}'
+    model.save_pretrained(path)
+    tokenizer.save_pretrained(path)
+    return path
 
 
 def extract_metrics(results_dict):
