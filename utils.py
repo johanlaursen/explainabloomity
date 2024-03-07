@@ -7,6 +7,7 @@ from collections import defaultdict, Counter
 from transformers import AutoTokenizer, AutoModel, utils
 from scipy.spatial.distance import pdist, squareform
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
+from datasets import load_dataset
 
 
 def visualize_single(att_map, sentence, figname):
@@ -376,3 +377,33 @@ def save_results(name, results_dict):
     print(name, " ", results_dict)
     df = get_dataframe(results_dict)
     df.to_csv("results/" + name + '.csv')
+
+def get_training_data(dataset_name="paws-x", n_samples=100, save_to_file=False, file_name=None):
+    """
+    Gets a random sample of training data from a given dataset.
+    Returns a list of tuples, where each tuple contains a modified sample and its ID.
+    """
+    dataset = load_dataset(dataset_name, "en", split="train")
+    random_sample = dataset.shuffle(seed=42)[:n_samples]
+
+    QUESTION_WORD = "right"
+    YES = "Yes"
+    NO = "No"
+
+    training_samples = []
+    for i in range(len(random_sample["id"])):
+        sentence1 = random_sample["sentence1"][i]
+        sentence2 = random_sample["sentence2"][i]
+        if random_sample["label"][i]:
+            modified_sample = f"{sentence1}, {QUESTION_WORD}? {YES}, {sentence2}"
+        else:
+            modified_sample = f"{sentence1}, {QUESTION_WORD}? {NO}, {sentence2}"
+        training_samples.append((modified_sample,random_sample["id"][i]))
+
+    if save_to_file:
+        if file_name is None:
+            file_name = f"{dataset_name}_training_data.csv"
+        df = pd.DataFrame(training_samples, columns=["prompt", "id"])
+        df.to_csv(file_name, sep="\t", index=False, header=False)
+        
+    return training_samples
