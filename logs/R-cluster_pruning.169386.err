@@ -1,0 +1,25 @@
+2024-03-09 17:04:50.178422: I tensorflow/tsl/cuda/cudart_stub.cc:28] Could not find cuda drivers on your machine, GPU will not be used.
+2024-03-09 17:04:50.299884: I tensorflow/tsl/cuda/cudart_stub.cc:28] Could not find cuda drivers on your machine, GPU will not be used.
+2024-03-09 17:04:50.300313: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2024-03-09 17:04:51.904725: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+Progress:   0%|          | 0/9 [00:00<?, ?it/s]Asking to truncate to max_length but no maximum length is provided and the model has no predefined maximum length. Default to no truncation.
+/home/jocl/explainabloomity/utils.py:232: ClusterWarning: scipy.cluster: The symmetric non-negative hollow observation matrix looks suspiciously like an uncondensed distance matrix
+  hc_linkage = linkage(distance_matrix, method='ward')
+Progress:  11%|█         | 1/9 [00:58<07:48, 58.62s/it]Asking to truncate to max_length but no maximum length is provided and the model has no predefined maximum length. Default to no truncation.
+/home/jocl/explainabloomity/utils.py:232: ClusterWarning: scipy.cluster: The symmetric non-negative hollow observation matrix looks suspiciously like an uncondensed distance matrix
+  hc_linkage = linkage(distance_matrix, method='ward')
+Progress:  22%|██▏       | 2/9 [01:55<06:44, 57.81s/it]Asking to truncate to max_length but no maximum length is provided and the model has no predefined maximum length. Default to no truncation.
+/home/jocl/explainabloomity/utils.py:232: ClusterWarning: scipy.cluster: The symmetric non-negative hollow observation matrix looks suspiciously like an uncondensed distance matrix
+  hc_linkage = linkage(distance_matrix, method='ward')
+Traceback (most recent call last):
+  File "/home/jocl/explainabloomity/main.py", line 23, in <module>
+    main(model_name="bigscience/bloom-560m",
+  File "/home/jocl/explainabloomity/main.py", line 16, in main
+    model_path = duplicate_prune_model(prompts, pruned_model_name, model, tokenizer, prune_percent=prune_percent,metric=metric, verbose=True)
+  File "/home/jocl/explainabloomity/utils.py", line 325, in duplicate_prune_model
+    squaref = squareform(pdist(attentions[layer_number].view(n_head, -1), metric=metric))
+  File "/opt/itu/easybuild/software/Anaconda3/2023.03-1/lib/python3.10/site-packages/scipy/spatial/distance.py", line 2252, in pdist
+    raise ValueError('Unknown Distance Metric: %s' % mstr)
+ValueError: Unknown Distance Metric: random
+Progress:  22%|██▏       | 2/9 [02:45<09:39, 82.83s/it]

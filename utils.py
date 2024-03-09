@@ -7,7 +7,7 @@ from collections import defaultdict, Counter
 from transformers import AutoTokenizer, AutoModel, utils
 from scipy.spatial.distance import pdist, squareform
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
-from datasets import load_dataset
+# from datasets import load_dataset
 
 
 def visualize_single(att_map, sentence, figname):
@@ -188,7 +188,7 @@ def attention_vector_multiple_inputs(attention_maps):
                     head_attentions[key] = att_map_vector
                 else:
                     head_attentions[key] = torch.cat((head_attentions[key], att_map_vector))
-    
+    head_attentions = {key: tensor.cpu().numpy() for key, tensor in head_attentions.items()}  # Convert each tensor to a numpy array
     head_attentions = np.array(list(head_attentions.values()))
     return head_attentions
 
@@ -319,7 +319,7 @@ def duplicate_prune_model(prompts, model_name, model, tokenizer, prune_percent=0
     # each element is a tensor of shape 
     # (num_prompts, num_heads, num_tokens, num_tokens)
 
-    layers_clustering_dict = get_clustering_dict(prompts, model, tokenizer,n_layers=n_layers, n_groups=n_groups)
+    layers_clustering_dict = get_clustering_dict(prompts, model, tokenizer,n_layers=n_layers, n_groups=n_groups, n_heads=n_head)
     counter = Counter()
     for layer_number in layers_clustering_dict.keys():
         squaref = squareform(pdist(attentions[layer_number].view(n_head, -1), metric=metric))
