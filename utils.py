@@ -322,7 +322,8 @@ def duplicate_prune_model(prompts, model_name, model, tokenizer, prune_percent=0
     layers_clustering_dict = get_clustering_dict(prompts, model, tokenizer,n_layers=n_layers, n_groups=n_groups, n_heads=n_head)
     counter = Counter()
     for layer_number in layers_clustering_dict.keys():
-        squaref = squareform(pdist(attentions[layer_number].view(n_head, -1), metric=metric))
+        if metric != 'random':
+            squaref = squareform(pdist(attentions[layer_number].view(n_head, -1), metric=metric))
         layer_clusters = layers_clustering_dict[layer_number]
         for group in layer_clusters:
             group_scores = defaultdict(int)
@@ -354,7 +355,7 @@ def duplicate_prune_model(prompts, model_name, model, tokenizer, prune_percent=0
                 
     if verbose:
         print(counter)
-    path = f'./models/{model_name}_{metric}_{prune_percent}'
+    path = f'{model_name}_{metric}_{prune_percent}'
     model.save_pretrained(path)
     tokenizer.save_pretrained(path)
     return path
