@@ -1,5 +1,5 @@
 import subprocess
-
+import sys
 
 # Install lm-evaluation-harness from EleutherAI using the following commands:
 # git clone https://github.com/EleutherAI/lm-evaluation-harness
@@ -17,7 +17,7 @@ def evaluate(model_path,
 
     ARGS:
         - model_path: str, path to model folder
-        - model_name: str, name of model for saving lm_cache and results
+        - model_name: str, name of model for saving results
         - task: str, task or list of tasks to evaluate on in format "task1,task2,task3"
     RETURNS:
         - None"""
@@ -33,7 +33,7 @@ def evaluate(model_path,
     "--device", device,
     "--output_path", f"results/{model_name}",
     "--num_fewshot", "0",
-    "-w"
+    "--write_out"
     ]
     try:
         subprocess.run(command, check=True)
@@ -44,3 +44,11 @@ def evaluate(model_path,
             print(f"Output: {e.output}")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+
+
+if __name__ == "__main__":
+    model_path = sys.argv[1]
+    model_name = sys.argv[2]
+    task = sys.argv[3]
+    evaluate(model_path, model_name, task)
+    

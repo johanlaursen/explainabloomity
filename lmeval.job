@@ -8,13 +8,13 @@
 #SBATCH --mem=48G
 #SBATCH --constraint="gpu_rtx8000|gpu_a100_40gb|gpu_v100" # Use either a v100 or a100
 #SBATCH --gres=gpu:1      #v100:1 or a100_40gb:1 on brown
-#SBATCH --time=0-02:00:00          # Run time (hh:mm:ss) 
+#SBATCH --time=0-01:00:00          # Run time (hh:mm:ss) 
 #SBATCH --partition=red,brown    # Run on either the red or brown queue
 
 #srun hostname
 
 module load Anaconda3
-
+conda activate lmeval
 
 # model_path="bigscience/bloom-560m"
 # model_name="bloom-560m"
