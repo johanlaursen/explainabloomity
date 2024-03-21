@@ -296,7 +296,7 @@ def duplicate_prune_model(prompts, model_name, model, tokenizer, prune_percent=0
     '''
     Duplicate prunes a model based on the attention scores of the heads.
     The attention scores are calculated for the prompts and the heads are clustered based on cosine similarity.
-    The heads within groups are then compared using metric and the head with the highest similarity to other heads in cluster is kepts
+    The heads within groups are then compared using a metric and the head with the highest similarity to other heads in cluster is kept
     
     Args:
         prompts: list of strings, prompts to calculate attention scores for
@@ -360,6 +360,47 @@ def duplicate_prune_model(prompts, model_name, model, tokenizer, prune_percent=0
     tokenizer.save_pretrained(path)
     return path
 
+def duplicate_prune_model_imbalanced(prompts, model_name, model, tokenizer, prune_percent=0.5, metric='euclidean', verbose=True):
+    attentions = get_attention_multiple_inputs(prompts, model, tokenizer)
+    n_head = model.config.n_head
+    n_layers = model.config.n_layer
+    total_heads = n_head * n_layers
+    heads_to_prune = int(total_heads * prune_percent)
+
+    head_similarity_scores = []
+
+    for layer_number in range(n_layers):
+        if metric != 'random':
+            squaref = squareform(pdist(attentions[layer_number].view(n_head, -1), metric=metric))
+        for head_id in range(n_head):
+            if metric == 'random':
+                score = random.random()
+            else:
+                score = sum(squaref[head_id]) / (n_head - 1)  # Average similarity with other heads
+            head_similarity_scores.append((layer_number, head_id, score))
+
+    # Sort by similarity score (lower is better for euclidean, higher for cosine or random)
+    head_similarity_scores.sort(key=lambda x: x[2], reverse=(metric != 'euclidean'))
+
+    # Prune the required number of heads based on global ranking
+    pruned_heads = head_similarity_scores[:heads_to_prune]
+
+    for layer_number, head_id, _ in pruned_heads:
+        # Find the most similar head in the same layer to duplicate
+        similar_heads = [x for x in head_similarity_scores if x[0] == layer_number and x[1] != head_id]
+        if similar_heads:
+            # Sort by similarity (most similar first)
+            similar_heads.sort(key=lambda x: x[2], reverse=(metric != 'euclidean'))
+            target_head = similar_heads[0][1]
+            model = duplicate_prune(model, source_layer=layer_number, source_head=target_head, target_layer=layer_number, target_head=head_id)
+
+    if verbose:
+        print(f'Pruned {len(pruned_heads)} heads out of {total_heads}')
+
+    path = f'{model_name}_{metric}_{prune_percent}'
+    model.save_pretrained(path)
+    tokenizer.save_pretrained(path)
+    return path
 
 def extract_metrics(results_dict):
     # Extracting the 'results' dictionary
