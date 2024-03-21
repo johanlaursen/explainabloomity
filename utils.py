@@ -242,7 +242,7 @@ def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', 
 
     return layer_clusters_dict
 
-def get_attention_weights(model,layer,head):
+def get_bloom_attention_weights(model,layer,head):
     """Get attention weights for a specific layer and head
     returns:
         head_attention: tensor of shape (3, head_dim, embedding_dim)
@@ -261,7 +261,7 @@ def get_attention_weights(model,layer,head):
     head_bias = attention_bias[head,:,:]
     return head_attention, head_bias
 
-def duplicate_prune(model, source_layer, source_head, target_layer, target_head):
+def duplicate_prune_bloom(model, source_layer, source_head, target_layer, target_head):
     """Given source layer and head, duplicate the attention weights and bias to the target layer and head
     Args: 
         source_layer: int,
@@ -272,7 +272,7 @@ def duplicate_prune(model, source_layer, source_head, target_layer, target_head)
         model: updated model with attention weights and bias duplicated to the target layer and head
     """
     
-    source_weight, source_bias = get_attention_weights(model, source_layer, source_head)
+    source_weight, source_bias = get_bloom_attention_weights(model, source_layer, source_head)
     target_bloom_block = model.h[target_layer]
     attention_weight = target_bloom_block.self_attention.query_key_value.weight
     attention_bias = target_bloom_block.self_attention.query_key_value.bias
@@ -351,7 +351,7 @@ def duplicate_prune_model(prompts, model_name, model, tokenizer, prune_percent=0
                 if head == head_to_keep:
                     continue
                 head_to_remove = head
-                model = duplicate_prune(model, source_layer=layer_number, source_head=head_to_keep, target_layer=layer_number, target_head=head_to_remove)
+                model = duplicate_prune_bloom(model, source_layer=layer_number, source_head=head_to_keep, target_layer=layer_number, target_head=head_to_remove)
                 
     if verbose:
         print(counter)
