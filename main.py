@@ -16,13 +16,13 @@ def main(model_name, pruned_model_name, metric, prune_percent):
     print(model_path)
 
 if __name__ == "__main__":
-    prune_percent = sys.argv[1] # 0.25 0.5 0.75
+    prune_percent = float(sys.argv[1]) # 0.25 0.5 0.75
     metric = sys.argv[2] # euclidean cosine random
     model_name = sys.argv[3] # i.e "bigscience/bloom-560m"
-    pruned_model_name = sys.argv[4] # i.e bloom-560m-pruned
+    path = sys.argv[4] # i.e path/bloom-560m-pruned
 
     main(model_name=model_name,
-            pruned_model_name=f"models/{pruned_model_name}",
+            pruned_model_name=path,
             metric=metric,
             prune_percent=prune_percent)
            
