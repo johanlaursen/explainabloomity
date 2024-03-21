@@ -312,8 +312,7 @@ def duplicate_prune_model(prompts, model_name, model, tokenizer, prune_percent=0
     '''
     
     attentions = get_attention_multiple_inputs(prompts, model, tokenizer)
-    n_head = model.config.n_head
-    n_layers = model.config.n_layer
+    n_layers, n_head = get_model_layers_and_heads(model.config)
     n_groups = n_head - int(n_head * prune_percent)
     # attention is tuple of len(layers) where 
     # each element is a tensor of shape 
@@ -362,8 +361,7 @@ def duplicate_prune_model(prompts, model_name, model, tokenizer, prune_percent=0
 
 def duplicate_prune_model_imbalanced(prompts, model_name, model, tokenizer, prune_percent=0.5, metric='euclidean', verbose=True):
     attentions = get_attention_multiple_inputs(prompts, model, tokenizer)
-    n_head = model.config.n_head
-    n_layers = model.config.n_layer
+    n_layers, n_head = get_model_layers_and_heads(model.config)
     total_heads = n_head * n_layers
     heads_to_prune = int(total_heads * prune_percent)
 
@@ -401,6 +399,17 @@ def duplicate_prune_model_imbalanced(prompts, model_name, model, tokenizer, prun
     model.save_pretrained(path)
     tokenizer.save_pretrained(path)
     return path
+
+def get_model_layers_and_heads(config):
+    if "bloom" in config._name_or_path:
+        heads = config.n_head
+        layers = config.n_layer
+    elif "opt" in config._name_or_path:
+        heads = config.num_attention_heads
+        layers = config.num_hidden_layers
+    else:
+        raise ValueError("Model not supported")
+    return layers, heads
 
 def extract_metrics(results_dict):
     # Extracting the 'results' dictionary
