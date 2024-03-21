@@ -2,7 +2,6 @@ from utils import *
 import eval
 import sys
 import pandas as pd 
-from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer
 
 def main(model_name, pruned_model_name, metric, prune_percent):
@@ -17,13 +16,14 @@ def main(model_name, pruned_model_name, metric, prune_percent):
     print(model_path)
 
 if __name__ == "__main__":
-    pbar = tqdm(total=3*3, desc="Progress")
-    for prune_percent in [0.25, 0.5, 0.75]:
-        for metric in ["euclidean", "cosine", "random"]:
-            main(model_name="bigscience/bloom-560m",
-                 pruned_model_name=f"models/bloom-560m_clusterpruned",
-                 metric=metric,
-                 prune_percent=prune_percent)
-            pbar.update(1)
+    prune_percent = sys.argv[1] # 0.25 0.5 0.75
+    metric = sys.argv[2] # euclidean cosine random
+    model_name = sys.argv[3] # i.e "bigscience/bloom-560m"
+    pruned_model_name = sys.argv[4] # i.e bloom-560m-pruned
+
+    main(model_name=model_name,
+            pruned_model_name=f"models/{pruned_model_name}",
+            metric=metric,
+            prune_percent=prune_percent)
+           
             
-    pbar.close()
