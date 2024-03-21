@@ -392,7 +392,7 @@ def duplicate_prune_model_imbalanced(prompts, model_name, model, tokenizer, prun
             # Sort by similarity (most similar first)
             similar_heads.sort(key=lambda x: x[2], reverse=(metric != 'euclidean'))
             target_head = similar_heads[0][1]
-            model = duplicate_prune(model, source_layer=layer_number, source_head=target_head, target_layer=layer_number, target_head=head_id)
+            model = duplicate_prune_bloom(model, source_layer=layer_number, source_head=target_head, target_layer=layer_number, target_head=head_id)
 
     if verbose:
         print(f'Pruned {len(pruned_heads)} heads out of {total_heads}')
