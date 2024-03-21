@@ -7,12 +7,14 @@ model_name="facebook/opt-13b"
 
 model_basename="${model_name##*/}"
 path="/home/data_shares/mapillary/thesis_models/pruned_models"
-pathpruned="${path}/${model_basename}_pruned"
+
+# Note if it is balanced or unbalanced
+pathpruned="${path}/${model_basename}_unbalanced_pruned"
 
 metrics=(
-    "cosine"
+    # "cosine"
     "euclidean"
-    "random"
+    # "random"
 )
 prune_percents=(
     "0.25"
@@ -24,6 +26,7 @@ for metric in "${metrics[@]}"
 do
     for prune_percent in "${prune_percents[@]}"
     do
-        sbatch --job-name="prune_${model_basename}_${metric}_${prune_percent}" prune.job $prune_percent $metric $model_name $pathpruned
+        # Note if it is balanced or unbalanced
+        sbatch --job-name="unbalanced_prune_${model_basename}_${metric}_${prune_percent}" prune.job $prune_percent $metric $model_name $pathpruned
     done
 done

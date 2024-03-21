@@ -22,4 +22,5 @@ echo "prune_percent=$1"
 echo "metric=$2"
 echo "model_name=$3"
 echo "pathpruned=$4"
-python main.py $1 $2 $3 $4
+# python main.py $1 $2 $3 $4
+python main_unbalanced.py $1 $2 $3 $4
