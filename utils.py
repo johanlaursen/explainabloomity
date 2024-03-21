@@ -458,3 +458,27 @@ def get_training_data(dataset_name="paws-x", n_samples=100, save_to_file=False, 
         df.to_csv(file_name, sep="\t", index=False, header=False)
         
     return training_samples
+
+
+def get_model_percentage_weight(model, verbose_attn=False, verbose_non_attn=False):
+    total_params = 0
+    attention_params = 0
+    for name, parameter in model_bloom.named_parameters():
+        # Count the total number of parameters
+        param_count = parameter.numel()
+        total_params += param_count
+        # Check if the layer is an attention layer
+        if "attention" in name or "attn" in name:
+            attention_params += param_count
+            if verbose_attn:
+                print(f"{name}: {param_count:,} parameters")
+        else:
+            if verbose_non_attn:
+                print(f"{name}: {param_count:,} parameters")
+
+
+    # Calculate the percentage of parameters in attention layers
+    attention_percentage = (attention_params / total_params) * 100
+    print(f"\nTotal parameters: {total_params:,}")
+    print(f"Attention parameters: {attention_params:,}")
+    print(f"Attention parameters make up {attention_percentage:.2f}% of the total parameters")
