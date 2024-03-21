@@ -353,6 +353,15 @@ def duplicate_prune_opt(model, source_layer, source_head, target_layer, target_h
     model.decoder.layers[target_layer].self_attn.out_proj.bias = torch.nn.Parameter(t_out_b.view_as(target_opt_block.self_attn.out_proj.bias))
     return model
 
+def duplicate_prune(model, source_layer, source_head, target_layer, target_head):
+    if "bloom" in model.config._name_or_path:
+        model = duplicate_prune_bloom(model, source_layer, source_head, target_layer, target_head)
+    elif "opt" in model.config._name_or_path:
+        model = duplicate_prune_opt(model, source_layer, source_head, target_layer, target_head)
+    else:
+        raise ValueError(f"Model {model.config._name_or_path} not supported")
+    return model
+
 def duplicate_prune_model(prompts, model_name, model, tokenizer, prune_percent=0.5, metric='euclidean', verbose=True):
     '''
     Duplicate prunes a model based on the attention scores of the heads.
@@ -411,12 +420,7 @@ def duplicate_prune_model(prompts, model_name, model, tokenizer, prune_percent=0
                 if head == head_to_keep:
                     continue
                 head_to_remove = head
-                if "bloom" in model.config._name_or_path:
-                    model = duplicate_prune_bloom(model, source_layer=layer_number, source_head=head_to_keep, target_layer=layer_number, target_head=head_to_remove)
-                elif "opt" in model.config._name_or_path:
-                    model = duplicate_prune_opt(model, source_layer=layer_number, source_head=head_to_keep, target_layer=layer_number, target_head=head_to_remove)
-                else:
-                    raise ValueError(f"Model {model.config._name_or_path} not supported")
+                model = duplicate_prune(model, source_layer=layer_number, source_head=head_to_keep, target_layer=layer_number, target_head=head_to_remove)
                 
     if verbose:
         print(counter)
@@ -456,7 +460,7 @@ def duplicate_prune_model_imbalanced(prompts, model_name, model, tokenizer, prun
             # Sort by similarity (most similar first)
             similar_heads.sort(key=lambda x: x[2], reverse=(metric != 'euclidean'))
             target_head = similar_heads[0][1]
-            model = duplicate_prune_bloom(model, source_layer=layer_number, source_head=target_head, target_layer=layer_number, target_head=head_id)
+            model = duplicate_prune(model, source_layer=layer_number, source_head=target_head, target_layer=layer_number, target_head=head_id)
 
     if verbose:
         print(f'Pruned {len(pruned_heads)} heads out of {total_heads}')
