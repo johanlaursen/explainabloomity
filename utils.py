@@ -261,6 +261,32 @@ def get_bloom_attention_weights(model,layer,head):
     head_bias = attention_bias[head,:,:]
     return head_attention, head_bias
 
+def get_opt_attention_weights(model, layer, head):
+    """Get attention weights for a specific layer and head
+    returns:
+        k: tensor of shape (head_dim, embedding_dim)
+        k_b: tensor of shape (head_dim)
+        v: tensor of shape (head_dim, embedding_dim)
+        v_b: tensor of shape (head_dim)
+        q: tensor of shape (head_dim, embedding_dim)
+        q_b: tensor of shape (head_dim)
+        out: tensor of shape (head_dim, embedding_dim)
+        out_b: tensor of shape (head_dim)
+        """
+    n_layers, n_head = get_model_layers_and_heads(model.config)
+    hidden_size = model.config.hidden_size
+    optdecoderlayer = model.decoder.layers[layer]
+    k = optdecoderlayer.self_attn.k_proj.weight.view(n_head, hidden_size//n_head, hidden_size)[head,:,:]
+    k_b = optdecoderlayer.self_attn.k_proj.bias.view(n_head, hidden_size//n_head)[head, :]
+    v = optdecoderlayer.self_attn.v_proj.weight.view(n_head, hidden_size//n_head, hidden_size)[head,:,:]
+    v_b = optdecoderlayer.self_attn.v_proj.bias.view(n_head, hidden_size//n_head)[head, :]
+    q = optdecoderlayer.self_attn.q_proj.weight.view(n_head, hidden_size//n_head, hidden_size)[head,:,:]
+    q_b = optdecoderlayer.self_attn.q_proj.bias.view(n_head, hidden_size//n_head)[head, :]
+    out = optdecoderlayer.self_attn.out_proj.weight.view(n_head, hidden_size//n_head, hidden_size)[head,:,:]
+    out_b = optdecoderlayer.self_attn.out_proj.bias.view(n_head, hidden_size//n_head)[head, :]
+
+    return k, k_b, v, v_b, q, q_b, out, out_b
+
 def duplicate_prune_bloom(model, source_layer, source_head, target_layer, target_head):
     """Given source layer and head, duplicate the attention weights and bias to the target layer and head
     Args: 
@@ -290,6 +316,41 @@ def duplicate_prune_bloom(model, source_layer, source_head, target_layer, target
         
     model.h[target_layer].self_attention.query_key_value.weight = torch.nn.Parameter(attention_weight.view_as(target_bloom_block.self_attention.query_key_value.weight))
     model.h[target_layer].self_attention.query_key_value.bias = torch.nn.Parameter(attention_bias.view_as(target_bloom_block.self_attention.query_key_value.bias))
+    return model
+
+def duplicate_prune_opt(model, source_layer, source_head, target_layer, target_head):
+
+    target_opt_block = model.decoder.layers[target_layer]
+    n_layer, n_head = get_model_layers_and_heads(model.config)
+    k, k_b, v, v_b, q, q_b, out, out_b = get_opt_attention_weights(model, source_layer, source_head)
+    hidden_size = model.config.hidden_size
+    t_k = target_opt_block.self_attn.k_proj.weight.view(n_head, hidden_size//n_head, hidden_size)
+    t_k_b = target_opt_block.self_attn.k_proj.bias.view(n_head, hidden_size//n_head)
+    t_v = target_opt_block.self_attn.v_proj.weight.view(n_head, hidden_size//n_head, hidden_size)
+    t_v_b = target_opt_block.self_attn.v_proj.bias.view(n_head, hidden_size//n_head)
+    t_q = target_opt_block.self_attn.q_proj.weight.view(n_head, hidden_size//n_head, hidden_size)
+    t_q_b = target_opt_block.self_attn.q_proj.bias.view(n_head, hidden_size//n_head)
+    t_out = target_opt_block.self_attn.out_proj.weight.view(n_head, hidden_size//n_head, hidden_size)
+    t_out_b = target_opt_block.self_attn.out_proj.bias.view(n_head, hidden_size//n_head)
+
+    with torch.no_grad():
+        t_k[target_head] =  k
+        t_k_b[target_head] =  k_b
+        t_v[target_head] =  v
+        t_v_b[target_head] = v_b 
+        t_q[target_head] =  q
+        t_q_b[target_head] = q_b 
+        t_out[target_head] =  out
+        t_out_b[target_head] =  out_b
+
+    model.decoder.layers[target_layer].self_attn.k_proj.weight = torch.nn.Parameter(t_k.view_as(target_opt_block.self_attn.k_proj.weight))
+    model.decoder.layers[target_layer].self_attn.k_proj.bias = torch.nn.Parameter(t_k_b.view_as(target_opt_block.self_attn.k_proj.bias))
+    model.decoder.layers[target_layer].self_attn.v_proj.weight = torch.nn.Parameter(t_v.view_as(target_opt_block.self_attn.v_proj.weight))
+    model.decoder.layers[target_layer].self_attn.v_proj.bias = torch.nn.Parameter(t_v_b.view_as(target_opt_block.self_attn.v_proj.bias))
+    model.decoder.layers[target_layer].self_attn.q_proj.weight = torch.nn.Parameter(t_q.view_as(target_opt_block.self_attn.q_proj.weight))
+    model.decoder.layers[target_layer].self_attn.q_proj.bias = torch.nn.Parameter(t_q_b.view_as(target_opt_block.self_attn.q_proj.bias))
+    model.decoder.layers[target_layer].self_attn.out_proj.weight = torch.nn.Parameter(t_out.view_as(target_opt_block.self_attn.out_proj.weight))
+    model.decoder.layers[target_layer].self_attn.out_proj.bias = torch.nn.Parameter(t_out_b.view_as(target_opt_block.self_attn.out_proj.bias))
     return model
 
 def duplicate_prune_model(prompts, model_name, model, tokenizer, prune_percent=0.5, metric='euclidean', verbose=True):
@@ -350,7 +411,12 @@ def duplicate_prune_model(prompts, model_name, model, tokenizer, prune_percent=0
                 if head == head_to_keep:
                     continue
                 head_to_remove = head
-                model = duplicate_prune_bloom(model, source_layer=layer_number, source_head=head_to_keep, target_layer=layer_number, target_head=head_to_remove)
+                if "bloom" in model.config._name_or_path:
+                    model = duplicate_prune_bloom(model, source_layer=layer_number, source_head=head_to_keep, target_layer=layer_number, target_head=head_to_remove)
+                elif "opt" in model.config._name_or_path:
+                    model = duplicate_prune_opt(model, source_layer=layer_number, source_head=head_to_keep, target_layer=layer_number, target_head=head_to_remove)
+                else:
+                    raise ValueError(f"Model {model.config._name_or_path} not supported")
                 
     if verbose:
         print(counter)
