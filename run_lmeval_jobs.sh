@@ -9,24 +9,24 @@ tasks="lambada_openai,paws_en,hellaswag"
 
 
 path="/home/data_shares/mapillary/thesis_models/pruned_models/"
-models=(
-    "opt-13b_prune_cosine_0.25"
-    "opt-13b_prune_cosine_0.5"
-    "opt-13b_prune_cosine_0.75"
-    "opt-13b_prune_euclidean_0.25"
-    "opt-13b_prune_euclidean_0.5"
-    "opt-13b_prune_euclidean_0.75"
-    "opt-13b_prune_random_0.25"
-    "opt-13b_prune_random_0.5"
-    "opt-13b_prune_random_0.75"
-    "opt-13b_unbalanced_prune_cosine_0.25"
-    "opt-13b_unbalanced_prune_cosine_0.5"
-    "opt-13b_unbalanced_prune_cosine_0.75"
-)
+# models=(
+    # "opt-13b_prune_cos_0.25"
+    # "opt-13b_prune_cos_0.5"
+    # "opt-13b_prune_cos_0.75"
+    # "opt-13b_prune_euc_0.25"
+    # "opt-13b_prune_euc_0.5"
+    # "opt-13b_prune_euc_0.75"
+    # "opt-13b_prune_ran_0.25"
+    # "opt-13b_prune_ran_0.5"
+    # "opt-13b_prune_ran_0.75"
+    # "opt-13b_unbalanced_prune_cos_0.25"
+    # "opt-13b_unbalanced_prune_cos_0.5"
+    # "opt-13b_unbalanced_prune_cos_0.75"
+# )
 
-for model in "${models[@]}"
-do
-    sbatch --job-name="lmeval_${model}" lmeval.job "${path}${model}" "${model}" $tasks
-done
+# for model in "${models[@]}"
+# do
+#     sbatch --job-name="lmeval_${model}" lmeval.job "${path}${model}" "${model}" $tasks
+# done
 
 sbatch --job-name="lmeval_opt13b_base" lmeval.job "facebook/opt-13b" "opt-13b_base" $tasks

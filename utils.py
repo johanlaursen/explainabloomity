@@ -424,9 +424,10 @@ def duplicate_prune_model(prompts, model_name, model, tokenizer, prune_percent=0
                 
     if verbose:
         print(counter)
-    path = f'{model_name}_{metric}_{prune_percent}'
+    met = metric[:3]
+    path = f'{model_name}_{met}_{prune_percent}'
+    model.half()
     model.save_pretrained(path)
-    tokenizer.save_pretrained(path)
     return path
 
 def duplicate_prune_model_imbalanced(prompts, model_name, model, tokenizer, prune_percent=0.5, metric='euclidean', verbose=True):

@@ -25,10 +25,10 @@ def evaluate(model_path,
     command = [
     "lm_eval",
     "--model", "hf",
-    "--model_args", f"pretrained={model_path}",
+    "--model_args", f"pretrained={model_path},dtype=float16",
     "--tasks", task,
-    "--batch_size", "auto",
-    "--max_batch_size", "64",
+    "--batch_size", "1", #"auto",
+    # "--max_batch_size", "64",
     # "--use_cache", f"lm_cache/{model_name}", # Massive slowdown from this
     "--device", device,
     "--output_path", f"results/{model_name}",

@@ -9,8 +9,8 @@ model_basename="${model_name##*/}"
 path="/home/data_shares/mapillary/thesis_models/pruned_models"
 
 # Note if it is balanced or unbalanced need to change prune.job
-prunetype="unbalanced_prune" # unbalanced_prune or pruned
-# prunetype="prune"
+# prunetype="unbalanced_prune" # unbalanced_prune or pruned
+prunetype="prune"
 pathpruned="${path}/${model_basename}_${prunetype}"
 
 metrics=(
@@ -20,8 +20,8 @@ metrics=(
 )
 prune_percents=(
     "0.25"
-    "0.5"
-    "0.75"
+    # "0.5"
+    # "0.75"
 )
 
 for metric in "${metrics[@]}"
