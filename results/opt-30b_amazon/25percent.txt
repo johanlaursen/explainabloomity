@@ -1,0 +1,56 @@
+{
+  "results": {
+    "record": {
+      "f1": 0.9067328571428573,
+      "em": 0.8989
+    },
+    "cb": {
+      "acc": 0.6071428571428571,
+      "f1": 0.5290605969851252
+    },
+    "arc_easy": {
+      "acc": 0.6986531986531986,
+      "acc_norm": 0.6582491582491582
+    },
+    "openbookqa": {
+      "acc": 0.308,
+      "acc_norm": 0.398
+    },
+    "arc_challenge": {
+      "acc": 0.3515358361774744,
+      "acc_norm": 0.386518771331058
+    },
+    "piqa": {
+      "acc": 0.7747551686615887,
+      "acc_norm": 0.780195865070729
+    },
+    "winogrande": {
+      "acc": 0.6795580110497238
+    },
+    "hellaswag": {
+      "acc": 0.5425214100776737,
+      "acc_norm": 0.7231627165903206
+    }
+  },
+  "versions": {
+    "record": 0,
+    "cb": 1,
+    "arc_easy": 0,
+    "openbookqa": 0,
+    "arc_challenge": 0,
+    "piqa": 0,
+    "winogrande": 0,
+    "hellaswag": 0
+  },
+  "config": {
+    "model": "opt",
+    "model_args": "pretrained=facebook/opt-30b,model_cache_dir=opt30b_checkpoints,tokenizer_cache_dir=opt30b_tokenizer,mask_heads=1,head_importance_path=logs/head_importance/opt30b/1shot_hellaswag.pkl,head_percent_mask=25",
+    "num_fewshot": 0,
+    "batch_size": 8,
+    "device": "cuda",
+    "no_cache": false,
+    "limit": null,
+    "bootstrap_iters": 100000,
+    "description_dict": {}
+  }
+}
