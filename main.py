@@ -3,6 +3,7 @@ import eval
 import sys
 import pandas as pd 
 from transformers import AutoModel, AutoTokenizer
+import torch
 
 def main(model_name, pruned_model_name, metric, prune_percent):
     df = pd.read_csv('pawsx_en_train_sample.tsv', sep="\t", header=None)
@@ -10,7 +11,8 @@ def main(model_name, pruned_model_name, metric, prune_percent):
     
     
     
-    model = AutoModel.from_pretrained(model_name, output_attentions=True)#.to(device)  # Configure model to return attention values
+    model = AutoModel.from_pretrained(model_name, output_attentions=True, torch_dtype=torch.float16 )#.to(device)  # Configure model to return attention values
+    model.eval()
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model_path = duplicate_prune_model(prompts, pruned_model_name, model, tokenizer, prune_percent=prune_percent,metric=metric, verbose=True)
     print(model_path)
