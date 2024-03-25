@@ -1,0 +1,56 @@
+{
+  "results": {
+    "piqa": {
+      "acc": 0.7758433079434167,
+      "acc_norm": 0.780739934711643
+    },
+    "hellaswag": {
+      "acc": 0.5428201553475404,
+      "acc_norm": 0.7227643895638319
+    },
+    "arc_challenge": {
+      "acc": 0.3455631399317406,
+      "acc_norm": 0.3796928327645051
+    },
+    "arc_easy": {
+      "acc": 0.7003367003367004,
+      "acc_norm": 0.6536195286195287
+    },
+    "record": {
+      "f1": 0.9086076190476194,
+      "em": 0.9007
+    },
+    "cb": {
+      "acc": 0.48214285714285715,
+      "f1": 0.43645772572949854
+    },
+    "winogrande": {
+      "acc": 0.6842936069455406
+    },
+    "openbookqa": {
+      "acc": 0.302,
+      "acc_norm": 0.402
+    }
+  },
+  "versions": {
+    "piqa": 0,
+    "hellaswag": 0,
+    "arc_challenge": 0,
+    "arc_easy": 0,
+    "record": 0,
+    "cb": 1,
+    "winogrande": 0,
+    "openbookqa": 0
+  },
+  "config": {
+    "model": "opt",
+    "model_args": "pretrained=facebook/opt-30b,model_cache_dir=/dtu/p1/alaisp/llm-interpret/lm-evaluation-harness/opt30b_checkpoints,tokenizer_cache_dir=/dtu/p1/alaisp/llm-interpret/lm-evaluation-harness/opt30b_tokenizer,mask_heads=1,head_importance_path=/dtu/p1/alaisp/llm-interpret/lm-evaluation-harness/../logs/head_importance/opt30b/1shot_hellaswag.pkl,head_percent_mask=0",
+    "num_fewshot": 0,
+    "batch_size": 2,
+    "device": "cuda",
+    "no_cache": false,
+    "limit": null,
+    "bootstrap_iters": 100000,
+    "description_dict": {}
+  }
+}
