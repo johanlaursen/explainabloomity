@@ -1,4 +1,5 @@
 from utils import *
+import os
 
 def duplicate_prune_bloom(model, source_layer, source_head, target_layer, target_head):
     """Given source layer and head, duplicate the attention weights and bias to the target layer and head
@@ -75,7 +76,7 @@ def duplicate_prune(model, source_layer, source_head, target_layer, target_head)
         raise ValueError(f"Model {model.config._name_or_path} not supported")
     return model
 
-def duplicate_prune_model(prompts, path, model, tokenizer, prune_method, prune_task, prune_percent=0.5, metric='euclidean', group_metric='euclidean', verbose=True):
+def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_method, prune_task, prune_percent=0.5, metric='euclidean', group_metric='euclidean', verbose=True):
     '''
     Duplicate prunes a model based on the attention scores of the heads.
     The attention scores are calculated for the prompts and the heads are clustered based on cosine similarity.
@@ -146,7 +147,8 @@ def duplicate_prune_model(prompts, path, model, tokenizer, prune_method, prune_t
         print(counter)
     # met = metric[:3]
     prune_metric = metric + "_" + group_metric
-    path_model = f"{model}/{prune_method}/{prune_task}/{prune_metric}/{prune_percent}"
+    model_name = os.path.basename(model_name)
+    path_model = f"{model_name}/{prune_method}/{prune_task}/{prune_metric}/{prune_percent}"
     
     model.half()
     model.save_pretrained(path+path_model+"/model")

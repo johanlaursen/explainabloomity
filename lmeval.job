@@ -22,14 +22,18 @@ conda activate lmeval
 # tasks="lambada_openai,paws_en,hellaswag"
 
 # python eval.py $1 $2
-
-model_args="pretrained=$1,dtype=float16"
+# model=$1
+model="facebook/opt-13b"
+model_args="pretrained=${model},dtype=float16"
 tasks=(
     "lambada_openai"
     "paws_en"
     "hellaswag"
-
+    "arc_easy"
+    "blimp_ellipsis_n_bar_1"
+    "blimp_irregular_plural_subject_verb_agreement_1"
 )
+output_path=""
 
 for task in "${tasks[@]}"
 do
@@ -38,7 +42,7 @@ do
     --tasks $task  \
     --batch_size "auto" \
     --device "cuda:0" \
-    --output_path "results/${task}/$2" \
+    --output_path "results/${task}/opt-13b_base" \
     --num_fewshot "0" \
     --write_out
 done
