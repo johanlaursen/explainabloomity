@@ -106,10 +106,10 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
     counter = Counter()
     pruning_log = []
     if prune_method == "balanced":
-        layers_clustering_dict = get_clustering_dict(prompts, model, tokenizer,n_layers=n_layers, n_groups=n_groups, n_heads=n_head)
+        layers_clustering_dict = get_clustering_dict(prompts, model, tokenizer,n_layers=n_layers, n_groups=n_groups, n_heads=n_head, metric=metric)
         for layer_number in layers_clustering_dict.keys():
-            if metric != 'random':
-                squaref = squareform(pdist(attentions[layer_number].view(n_head, -1), metric=metric))
+            if group_metric != 'random':
+                squaref = squareform(pdist(attentions[layer_number].view(n_head, -1), metric=group_metric))
             layer_clusters = layers_clustering_dict[layer_number]
             for group in layer_clusters:
                 group_scores = defaultdict(int)
@@ -120,7 +120,7 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
                     # with 2 heads just keep the first 1
                     head_to_keep = group[0]
                 else:
-                    if metric == 'random':
+                    if group_metric == 'random':
                         head_to_keep = random.choice(group)
                     else:
                         for head_id in group:
@@ -128,10 +128,7 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
                                 if head_id == head_id_2:
                                     continue
                                 group_scores[head_id] += squaref[head_id, head_id_2]
-                        if metric == 'euclidean':
-                            head_to_keep = min(group_scores, key=lambda k: group_scores[k])
-                        elif metric == 'cosine':
-                            head_to_keep = max(group_scores, key=lambda k: group_scores[k])
+                        head_to_keep = min(group_scores, key=lambda k: group_scores[k])
                         
                 for head in group:
                     if head == head_to_keep:
@@ -144,7 +141,7 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
         pass  
                   
     if verbose:
-        print(counter)
+        print("size of groups: ", counter)
     # met = metric[:3]
     prune_metric = metric + "_" + group_metric
     model_name = os.path.basename(model_name)
@@ -156,6 +153,7 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
     tokenizer.save_pretrained(path+path_model+"/model")
     return path+path_model
 
+# TODO remove this should be put into duplicate_prune_model
 def duplicate_prune_model_imbalanced(prompts, model_name, model, tokenizer, prune_percent=0.5, metric='euclidean', verbose=True):
     attentions = get_attention_multiple_inputs(prompts, model, tokenizer)
     n_layers, n_head = get_model_layers_and_heads(model.config)

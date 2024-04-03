@@ -21,7 +21,7 @@ conda env list
 echo "prune_percent=$1"
 echo "metric=$2"
 echo "model_name=$3"
-echo "pathpruned=$4"
+echo "path=$4"
 echo "prunetask=$5"
 echo "group_metrics=$6"
 echo "prune_method=$7"
