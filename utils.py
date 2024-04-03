@@ -3,6 +3,7 @@ import torch
 import random
 import numpy as np
 import pandas as pd
+import os
 from collections import defaultdict, Counter
 from transformers import AutoTokenizer, AutoModel, utils
 from scipy.spatial.distance import pdist, squareform
@@ -371,7 +372,9 @@ def get_model_percentage_weight(model, verbose_attn=False, verbose_non_attn=Fals
     print(f"Attention parameters make up {attention_percentage:.2f}% of the total parameters")
     
 def save_pruning_log(path, pruning_log):
-    with open(f"pruning_logs/{path}/pruning_log.txt", "w") as f:
+    file_path = f"pruning_logs/{path}/pruning_log.txt"
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, "w") as f:
         for layer, head_to_keep, head_to_remove in pruning_log:
             f.write(f"{layer}, {head_to_keep}, {head_to_remove}\n")
             
