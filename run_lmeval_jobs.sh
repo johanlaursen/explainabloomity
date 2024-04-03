@@ -5,7 +5,6 @@
 # model_path is the path to the model
 # model_name is name to save results as
 # tasks is a comma separated list of tasks to evaluate on
-tasks="lambada_openai,paws_en,hellaswag"
 # tasks="paws_en"
 # tasks="lambada_openai"
 
@@ -16,9 +15,9 @@ base_models=(
     
 )
 prompts=(
-    "lambada_openai"
     "paws_en"
     "hellaswag"
+    "arc_easy"
 )
 pruning_method=(
     "balanced"

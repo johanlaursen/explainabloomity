@@ -6,7 +6,7 @@ import pandas as pd
 from transformers import AutoModel, AutoTokenizer
 import torch
 
-def main(model_name, metric, group_metric, prune_percent, prune_task, prune_method):
+def main(model_name, path, metric, group_metric, prune_percent, prune_task, prune_method):
     prompts = get_prompts_from_file(prune_task)
     model = AutoModel.from_pretrained(model_name, output_attentions=True)
     model.eval()
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     group_metric = sys.argv[6] # i.e "cosine if metric is cosine otherwise random"
     prune_method = sys.argv[7] # i.e balanced or imbalanced
     main(model_name=model_name,
-            pruned_model_name=path,
+            path=path,
             metric=metric,
             prune_percent=prune_percent,
             prune_task=prompt,
