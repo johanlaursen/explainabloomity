@@ -76,7 +76,7 @@ def duplicate_prune(model, source_layer, source_head, target_layer, target_head)
         raise ValueError(f"Model {model.config._name_or_path} not supported")
     return model
 
-def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_method, prune_task, prune_percent=0.5, metric='euclidean', group_metric='euclidean', verbose=True):
+def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_method, prune_task, prune_percent=0.5, metric='euclidean', group_metric='euclidean', verbose=False):
     '''
     Duplicate prunes a model based on the attention scores of the heads.
     The attention scores are calculated for the prompts and the heads are clustered based on cosine similarity.
