@@ -21,5 +21,24 @@ conda activate lmeval
 # model_name="bloom-560m"
 # tasks="lambada_openai,paws_en,hellaswag"
 
-python eval.py $1 $2 $3
+# python eval.py $1 $2
 
+model_args="pretrained=$1,dtype=float16"
+tasks=(
+    "lambada_openai"
+    "paws_en"
+    "hellaswag"
+
+)
+
+for task in "${tasks[@]}"
+do
+    lm_eval --model "hf" \
+    --model_args $model_args  \
+    --tasks $task  \
+    --batch_size "auto" \
+    --device "cuda:0" \
+    --output_path "results/${task}/$2" \
+    --num_fewshot "0" \
+    --write_out
+done
