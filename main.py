@@ -1,20 +1,25 @@
 from utils import *
+from prune import duplicate_prune_model
 import eval
 import sys
 import pandas as pd 
 from transformers import AutoModel, AutoTokenizer
 import torch
 
-def main(model_name, pruned_model_name, metric, prune_percent):
-    df = pd.read_csv('pawsx_en_train_sample.tsv', sep="\t", header=None)
-    prompts = [x for x in df[0]]
-    
-    
-    
-    model = AutoModel.from_pretrained(model_name, output_attentions=True)#.to(device)  # Configure model to return attention values
+def main(model_name, metric, group_metric, prune_percent, prune_task):
+    prompts = get_prompts_from_file(prune_task)
+    model = AutoModel.from_pretrained(model_name, output_attentions=True)
     model.eval()
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model_path = duplicate_prune_model(prompts, pruned_model_name, model, tokenizer, prune_percent=prune_percent,metric=metric, verbose=True)
+    model_path = duplicate_prune_model(prompts=prompts, 
+                                       path=path,
+                                       model=model,
+                                       tokenizer=tokenizer,
+                                       prune_percent=prune_percent,
+                                       prune_task=prune_task,
+                                       metric=metric,
+                                       group_metric=group_metric,
+                                       verbose=True)
     print(model_path)
 
 if __name__ == "__main__":

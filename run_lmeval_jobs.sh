@@ -11,6 +11,30 @@ tasks="lambada_openai,paws_en,hellaswag"
 
 
 path="/home/data_shares/mapillary/thesis_models/pruned_models/"
+base_models=(
+    "opt-13b"
+    
+)
+prompts=(
+    "lambada_openai"
+    "paws_en"
+    "hellaswag"
+)
+pruning_method=(
+    "balanced"
+    "imbalanced"
+)
+prune_metric=(
+    "cosine"
+    "euclidean"
+    "random"
+)
+prune_ratios=(
+    "0.25"
+    "0.5"
+    "0.75"
+)
+
 models=(
     # "opt-13b_prune_cos_0.25"
     # "opt-13b_prune_cos_0.5"
