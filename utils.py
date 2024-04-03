@@ -4,6 +4,7 @@ import random
 import numpy as np
 import pandas as pd
 import os
+import re
 from collections import defaultdict, Counter
 from transformers import AutoTokenizer, AutoModel, utils
 from scipy.spatial.distance import pdist, squareform
@@ -358,7 +359,7 @@ def get_arc_data(dataset_name="allenai/ai2_arc", n_samples=100, save_to_file=Fal
     training_samples = []
     for i in range(len(random_sample["id"])):
         question = random_sample["question"][i]
-        choices = random_sample[i]["choices"]["text"]
+        choices = random_sample["choices"][i]["text"]
         option_a = choices[0]
         option_b = choices[1]
         option_c = choices[2]
@@ -371,6 +372,38 @@ def get_arc_data(dataset_name="allenai/ai2_arc", n_samples=100, save_to_file=Fal
         Answer:'''
 
         training_samples.append((modified_sample,random_sample["id"][i]))
+
+    if save_to_file:
+        if file_name is None:
+            file_name = f"{dataset_name}.tsv"
+        df = pd.DataFrame(training_samples, columns=["prompt", "id"])
+        df.to_csv(file_name, sep="\t", index=False, header=False)
+        
+    return training_samples
+
+def preprocess(text):
+    text = text.strip()
+    # NOTE: Brackets are artifacts of the WikiHow dataset portion of HellaSwag.
+    text = text.replace(" [title]", ". ")
+    text = re.sub("\\[.*?\\]", "", text)
+    text = text.replace("  ", " ")
+    return text
+
+def get_hellaswag_data(dataset_name="Rowan/hellaswag", n_samples=100, save_to_file=False, file_name=None):
+    """
+    Gets a random sample of training data from a given dataset.
+    Returns a list of tuples, where each tuple contains a modified sample and its ID.
+    """
+    dataset = load_dataset(dataset_name, split="train")
+    random_sample = dataset.shuffle(seed=42)[:n_samples]
+
+    training_samples = []
+    for i in range(len(random_sample["ind"])):
+        label = int(random_sample["label"][i])
+        text = preprocess(random_sample["ctx"][i])
+        ending = preprocess(random_sample["endings"][i][label])
+        modified_sample = text+ending
+        training_samples.append((modified_sample,random_sample["ind"][i]))
 
     if save_to_file:
         if file_name is None:
