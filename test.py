@@ -22,6 +22,30 @@ from scipy.spatial.distance import pdist, squareform
 from datasets import load_dataset
 from collections import defaultdict, Counter
 
+blimp = load_dataset("nyu-mll/blimp", "ellipsis_n_bar_1", split="train")
+
+def get_blimp_ellipsis_data(n_samples=100, save_to_file=False, file_name=None):
+    """
+    Gets a random sample of training data from a given dataset.
+    Returns a list of tuples, where each tuple contains a modified sample and its ID.
+    """
+    dataset = load_dataset("nyu-mll/blimp", "ellipsis_n_bar_1", split="train")
+    random_sample = dataset.shuffle(seed=42)[:n_samples]
+
+    training_samples = []
+    for i in range(len(random_sample["pair_id"])):
+        sentence = random_sample["sentence_good"][i]
+        training_samples.append((sentence,random_sample["pair_id"][i]))
+
+    if save_to_file:
+        if file_name is None:
+            file_name = f"tasks/blimp_ellipsis_n_bar_1.tsv"
+        df = pd.DataFrame(training_samples, columns=["prompt", "id"])
+        df.to_csv(file_name, sep="\t", index=False, header=False)
+        
+    return training_samples
+
+get_blimp_ellipsis_data(save_to_file=True)
 
 lambada = load_dataset("lambada")
 

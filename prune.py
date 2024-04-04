@@ -144,10 +144,10 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
         heads_to_prune = int(total_heads * prune_percent)
         head_similarity_scores = []
         for layer_number in range(n_layers):
-            if metric != 'random':
+            if group_metric != 'random':
                 squaref = squareform(pdist(attentions[layer_number].view(n_head, -1), metric=metric))
             for head_id in range(n_head):
-                if metric == 'random':
+                if group_metric == 'random':
                     score = random.random()
                 else:
                     score = sum(squaref[head_id]) / (n_head - 1)  # Average similarity with other heads
