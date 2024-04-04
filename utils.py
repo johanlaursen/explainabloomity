@@ -444,7 +444,7 @@ def save_pruning_log(path, pruning_log):
             f.write(f"{layer}, {head_to_keep}, {head_to_remove}\n")
             
 def get_prompts_from_file(prune_task):
-    file_path = prune_task + ".tsv"
+    file_path = "tasks/" + prune_task + ".tsv"
     df = pd.read_csv(file_path, sep="\t", header=None)
     prompts = [x for x in df[0]]
     return prompts
