@@ -318,12 +318,12 @@ def save_results(name, results_dict):
     df = get_dataframe(results_dict)
     df.to_csv("results/" + name + '.csv')
 
-def get_paws_data(dataset_name="paws-x", n_samples=100, save_to_file=False, file_name=None):
+def get_paws_data(n_samples=100, save_to_file=False, file_name=None):
     """
     Gets a random sample of training data from a given dataset.
     Returns a list of tuples, where each tuple contains a modified sample and its ID.
     """
-    dataset = load_dataset(dataset_name, "en", split="train")
+    dataset = load_dataset("paws-x", "en", split="train")
     random_sample = dataset.shuffle(seed=42)[:n_samples]
 
     QUESTION_WORD = "right"
@@ -342,18 +342,18 @@ def get_paws_data(dataset_name="paws-x", n_samples=100, save_to_file=False, file
 
     if save_to_file:
         if file_name is None:
-            file_name = f"{dataset_name}.tsv"
+            file_name = f"tasks/paws_en.tsv"
         df = pd.DataFrame(training_samples, columns=["prompt", "id"])
         df.to_csv(file_name, sep="\t", index=False, header=False)
         
     return training_samples
 
-def get_arc_data(dataset_name="allenai/ai2_arc", n_samples=100, save_to_file=False, file_name=None):
+def get_arc_data(n_samples=100, save_to_file=False, file_name=None):
     """
     Gets a random sample of training data from a given dataset.
     Returns a list of tuples, where each tuple contains a modified sample and its ID.
     """
-    dataset = load_dataset(dataset_name, "ARC-Easy", split="train")
+    dataset = load_dataset("allenai/ai2_arc", "ARC-Easy", split="train")
     random_sample = dataset.shuffle(seed=42)[:n_samples]
 
     training_samples = []
@@ -375,7 +375,7 @@ def get_arc_data(dataset_name="allenai/ai2_arc", n_samples=100, save_to_file=Fal
 
     if save_to_file:
         if file_name is None:
-            file_name = f"{dataset_name}.tsv"
+            file_name = f"tasks/arc_easy.tsv"
         df = pd.DataFrame(training_samples, columns=["prompt", "id"])
         df.to_csv(file_name, sep="\t", index=False, header=False)
         
@@ -389,12 +389,12 @@ def preprocess(text):
     text = text.replace("  ", " ")
     return text
 
-def get_hellaswag_data(dataset_name="Rowan/hellaswag", n_samples=100, save_to_file=False, file_name=None):
+def get_hellaswag_data(n_samples=100, save_to_file=False, file_name=None):
     """
     Gets a random sample of training data from a given dataset.
     Returns a list of tuples, where each tuple contains a modified sample and its ID.
     """
-    dataset = load_dataset(dataset_name, split="train")
+    dataset = load_dataset("Rowan/hellaswag", split="train")
     random_sample = dataset.shuffle(seed=42)[:n_samples]
 
     training_samples = []
@@ -407,7 +407,7 @@ def get_hellaswag_data(dataset_name="Rowan/hellaswag", n_samples=100, save_to_fi
 
     if save_to_file:
         if file_name is None:
-            file_name = f"{dataset_name}.tsv"
+            file_name = f"tasks/hellaswag.tsv"
         df = pd.DataFrame(training_samples, columns=["prompt", "id"])
         df.to_csv(file_name, sep="\t", index=False, header=False)
         
