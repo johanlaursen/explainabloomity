@@ -124,13 +124,14 @@ fig, axes = plt.subplots(len(all_data), 1, figsize=(10, 15), sharex=True)
 
 for i, (dataset, dir_data) in enumerate(all_data.items()):
     for dir_name, pruning_data in dir_data.items():
+        label = dir_name.replace('0shot', 'amazon')
         x_values = sorted(pruning_data.keys(), key=lambda x: float(x))
         y_values = [pruning_data[x] for x in x_values]
 
         # Converting string percentages to float for plotting
         x_values = [float(x)/100 for x in x_values]
 
-        axes[i].plot(x_values, y_values, label=dir_name)
+        axes[i].plot(x_values, y_values, label=label)
 
     axes[i].set_title(f'{dataset} Dataset')
     axes[i].set_ylabel('Accuracy')
