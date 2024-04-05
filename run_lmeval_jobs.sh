@@ -10,7 +10,7 @@ prunetasks=(
     # "hellaswag"
     # "arc_easy"
 )
-pruning_method=(
+pruning_methods=(
     "balanced"
     # "imbalanced"
 )
@@ -32,12 +32,12 @@ do
     do
         for prunetask in "${prunetasks[@]}"
         do
-            for prunemethod in "${prune_methods[@]}"
+            for prunemethod in "${pruning_methods[@]}"
             do
                 for metric in "${metrics[@]}"
                 do
                     sbatch --job-name="lmeval_${model}_${prunetask}" lmeval.job $prunetask $prunemethod
-                    echo "${path}${model}/${prunemethod}/${prunetask}/${metric}/${prune_percent}/model"
+                    # echo "${path}${model}/${prunemethod}/${prunetask}/${metric}/${prune_percent}/model"
                 done
             done
         done
