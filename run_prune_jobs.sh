@@ -1,9 +1,9 @@
 #!/bin/bash
 
 
-model_name="bigscience/bloom-7b1"
+# model_name="bigscience/bloom-7b1"
 # model_name="facebook/opt-6.7b"
-# model_name="facebook/opt-13b"
+model_name="facebook/opt-13b"
 
 model_basename="${model_name##*/}"
 path="/home/data_shares/mapillary/thesis_models/pruned_models/"
@@ -15,13 +15,14 @@ prune_methods=(
     # "imbalanced"
 )
 metrics=(
-    "cosine"
-    # "euclidean"
+    # "cosine"
+    "euclidean"
 )
 prunetasks=(
-    "paws_en"
-    # "hellaswag"
+    # "paws_en"
+    "hellaswag"
     # "arc_easy"
+    # "blimp_ellipsis_n_bar_1"
 )
 prune_percents=(
     "0.25"
@@ -54,7 +55,7 @@ do
             for prunemethod in "${prune_methods[@]}"
             do
                 sbatch --job-name="${prunemethod}_${model_basename}_${metric}_${prune_percent}_${prompt}" prune.job $prune_percent $metric $model_name $path $prunetask $metric $prunemethod
-                # sbatch --job-name="${prunetype}_${model_basename}_${metric}_${prune_percent}_${prompt}" prune.job $prune_percent $metric $model_name $path $prunetask "random" $prunemethod
+                # sbatch --job-name="${prunemethod}_${model_basename}_${metric}_${prune_percent}_${prompt}" prune.job $prune_percent $metric $model_name $path $prunetask "random" $prunemethod
             done
         done
         # Note if it is balanced or unbalanced
