@@ -9,7 +9,7 @@ from collections import defaultdict, Counter
 from transformers import AutoTokenizer, AutoModel, utils
 from scipy.spatial.distance import pdist, squareform
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
-from datasets import load_dataset
+# from datasets import load_dataset
 
 
 def visualize_single(att_map, sentence, figname):
