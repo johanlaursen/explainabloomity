@@ -2,7 +2,9 @@
 
 
 # model_name="bigscience/bloom-7b1"
+# model_name="bigscience/bloom-7b1"
 # model_name="facebook/opt-6.7b"
+model_name="facebook/opt-13b"
 model_name="facebook/opt-13b"
 
 model_basename="${model_name##*/}"
