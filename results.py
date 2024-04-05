@@ -84,3 +84,65 @@ fig.legend(handles, labels, loc='center right')
 
 plt.tight_layout()
 plt.show()
+
+##########
+
+
+import json
+import matplotlib.pyplot as plt
+import os
+from collections import defaultdict
+
+def load_results(directory):
+    all_results = defaultdict(lambda: defaultdict(dict))
+    # Directory names are like '0shot_arc_easy', '0shot_hellaswag', etc.
+    for dir_name in os.listdir(directory):
+        dir_path = os.path.join(directory, dir_name)
+        if os.path.isdir(dir_path):
+            # File names are like '0shot_25percent', '0shot_50percent', etc.
+            for file_name in os.listdir(dir_path):
+                file_path = os.path.join(dir_path, file_name)
+                try:
+                    with open(file_path, 'r') as file:
+                        data = json.load(file)
+                        # Extract pruning percentage from file name
+                        pruning_percent = file_name.split('_')[1].replace('percent', '')
+                        # Store data based on dir_name and pruning percent
+                        for dataset, metrics in data['results'].items():
+                            if 'acc' in metrics:
+                                all_results[dataset][dir_name][pruning_percent] = metrics['acc']
+                except Exception as e:
+                    print(f'Error loading {file_path}: {e}')
+    return all_results
+
+# Path to the directory containing the results
+results_directory = 'results/opt-13b_amazon'
+all_data = load_results(results_directory)
+
+# Plotting
+fig, axes = plt.subplots(len(all_data), 1, figsize=(10, 15), sharex=True)
+
+for i, (dataset, dir_data) in enumerate(all_data.items()):
+    for dir_name, pruning_data in dir_data.items():
+        x_values = sorted(pruning_data.keys(), key=lambda x: float(x))
+        y_values = [pruning_data[x] for x in x_values]
+
+        # Converting string percentages to float for plotting
+        x_values = [float(x)/100 for x in x_values]
+
+        axes[i].plot(x_values, y_values, label=dir_name)
+
+    axes[i].set_title(f'{dataset} Dataset')
+    axes[i].set_ylabel('Accuracy')
+
+axes[-1].set_xlabel('Pruning Percentage')
+plt.xticks([0, 0.25, 0.5, 0.75], ['0%', '25%', '50%', '75%'])
+
+# Creating a unified legend
+handles, labels = axes[0].get_legend_handles_labels()
+fig.legend(handles, labels, loc='center right')
+
+plt.tight_layout()
+plt.show()
+
+

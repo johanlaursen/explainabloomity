@@ -1,30 +1,30 @@
 {
   "results": {
+    "blimp_ellipsis_n_bar_1": {
+      "acc": 0.844
+    },
+    "hellaswag": {
+      "acc": 0.5153355905198168,
+      "acc_norm": 0.6955785700059749
+    },
+    "arc_easy": {
+      "acc": 0.6519360269360269,
+      "acc_norm": 0.6035353535353535
+    },
     "lambada": {
       "ppl": 17.69868644054499,
       "acc": 0.4304288763826897
     },
     "blimp_irregular_plural_subject_verb_agreement_1": {
       "acc": 0.917
-    },
-    "arc_easy": {
-      "acc": 0.6519360269360269,
-      "acc_norm": 0.6035353535353535
-    },
-    "hellaswag": {
-      "acc": 0.5153355905198168,
-      "acc_norm": 0.6955785700059749
-    },
-    "blimp_ellipsis_n_bar_1": {
-      "acc": 0.844
     }
   },
   "versions": {
-    "lambada": 0,
-    "blimp_irregular_plural_subject_verb_agreement_1": 0,
-    "arc_easy": 0,
+    "blimp_ellipsis_n_bar_1": 0,
     "hellaswag": 0,
-    "blimp_ellipsis_n_bar_1": 0
+    "arc_easy": 0,
+    "lambada": 0,
+    "blimp_irregular_plural_subject_verb_agreement_1": 0
   },
   "config": {
     "model": "opt",

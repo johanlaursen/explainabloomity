@@ -1,5 +1,15 @@
 {
   "results": {
+    "lambada": {
+      "ppl": 5.551398378987346,
+      "acc": 0.6225499708907433
+    },
+    "blimp_irregular_plural_subject_verb_agreement_1": {
+      "acc": 0.926
+    },
+    "blimp_ellipsis_n_bar_1": {
+      "acc": 0.867
+    },
     "hellaswag": {
       "acc": 0.5242979486158136,
       "acc_norm": 0.6982672774347739
@@ -7,24 +17,14 @@
     "arc_easy": {
       "acc": 0.6654040404040404,
       "acc_norm": 0.6132154882154882
-    },
-    "blimp_irregular_plural_subject_verb_agreement_1": {
-      "acc": 0.926
-    },
-    "lambada": {
-      "ppl": 5.551398378987346,
-      "acc": 0.6225499708907433
-    },
-    "blimp_ellipsis_n_bar_1": {
-      "acc": 0.867
     }
   },
   "versions": {
-    "hellaswag": 0,
-    "arc_easy": 0,
-    "blimp_irregular_plural_subject_verb_agreement_1": 0,
     "lambada": 0,
-    "blimp_ellipsis_n_bar_1": 0
+    "blimp_irregular_plural_subject_verb_agreement_1": 0,
+    "blimp_ellipsis_n_bar_1": 0,
+    "hellaswag": 0,
+    "arc_easy": 0
   },
   "config": {
     "model": "opt",
