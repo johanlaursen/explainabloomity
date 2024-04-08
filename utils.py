@@ -1,8 +1,10 @@
 import matplotlib.pyplot as plt
 import torch
 import random
+import json
 import numpy as np
 import pandas as pd
+from pathlib import Path
 import os
 import re
 from collections import defaultdict, Counter
@@ -448,3 +450,62 @@ def get_prompts_from_file(prune_task):
     df = pd.read_csv(file_path, sep="\t", header=None)
     prompts = [x for x in df[0]]
     return prompts
+
+def get_results(path="/mnt/c/github/explainabloomity/results"):
+    models = ("opt-13b", )
+    prune_methods=(
+        "balanced",
+        # "imbalanced" ,
+    )
+    metrics=(
+        "cosine_cosine" ,
+        "euclidean_euclidean" ,
+        "cosine_random",
+        "euclidean_random",
+    )
+    prunetasks=(
+        "paws_en",
+        "hellaswag",
+        "arc_easy",
+        "blimp_ellipsis_n_bar_1",
+    )
+    prune_percents=(
+        "0.25",
+        "0.5",
+        "0.75",
+    )
+    tasks=(
+        "lambada_openai",
+        "paws_en",
+        "hellaswag",
+        "arc_easy",
+        "blimp_ellipsis_n_bar_1",
+        "blimp_irregular_plural_subject_verb_agreement_1")
+    rows = []
+    for model in models:
+        for prune_method in prune_methods:
+            for prune_task in prunetasks:
+                for prune_metric in metrics:
+                    for prune_percent in prune_percents:
+                        for task in tasks:
+                            path_model = Path("./results")/ task / model / prune_method / prune_task / prune_metric / prune_percent / "results.json"
+                            if path_model.exists():
+                                with open(path_model, "r") as f:
+                                    data = json.load(f)
+                                    norm_accuracy = data["results"][task]["acc,none"]
+                                    row = {"model": model, "prune_method": prune_method, "prune_task": prune_task, "metric": prune_metric, "percent": prune_percent, "task": task, "norm_accuracy": norm_accuracy}
+                                    rows.append(row)
+
+    for task in tasks:
+        for model in models:
+            model += "_base"
+            path_model = Path("./results")/ task / model / "results.json"
+            if path_model.exists():
+                with open(path_model, "r") as f:
+                    data = json.load(f)
+                    norm_accuracy = data["results"][task]["acc,none"]
+                    row = {"model": model, "prune_method": None, "prune_task": None, "metric": None, "percent": None, "task": task, "norm_accuracy": norm_accuracy}
+                    rows.append(row)
+
+    df = pd.DataFrame(rows)
+    return df
