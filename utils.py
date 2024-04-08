@@ -509,3 +509,15 @@ def get_results(path="/mnt/c/github/explainabloomity/results"):
 
     df = pd.DataFrame(rows)
     return df
+
+def get_amazon_attention_mask(path = 'head_importance/0shot_arc_easy.pkl', head_percent_mask = 50):
+    head_importance = pickle.load(open(path, 'rb'))
+    num_hidden_layers = head_importance.shape[0]
+    num_heads= head_importance.shape[1]
+    head_mask = torch.ones(num_hidden_layers * num_heads, dtype = torch.half)
+
+    _, head_indices = torch.sort(head_importance.view(-1))
+    head_indices = list(head_indices.numpy())
+    head_indices = head_indices[: int(head_percent_mask) * len(head_indices) // 100]
+    head_mask[head_indices] = 0.
+    return head_mask
