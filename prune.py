@@ -1,5 +1,6 @@
 from utils import *
 import os
+from tqdm import tqdm
 
 def duplicate_prune_bloom(model, source_layer, source_head, target_layer, target_head):
     """Given source layer and head, duplicate the attention weights and bias to the target layer and head
@@ -67,6 +68,72 @@ def duplicate_prune_opt(model, source_layer, source_head, target_layer, target_h
     model.decoder.layers[target_layer].self_attn.out_proj.bias = torch.nn.Parameter(t_out_b.view_as(target_opt_block.self_attn.out_proj.bias))
     return model
 
+def prune_opt(model, layer, head):
+    target_opt_block = model.decoder.layers[layer]
+    n_layer, n_head = get_model_layers_and_heads(model.config)
+    hidden_size = model.config.hidden_size
+    t_k = target_opt_block.self_attn.k_proj.weight.view(n_head, hidden_size//n_head, hidden_size)
+    t_k_b = target_opt_block.self_attn.k_proj.bias.view(n_head, hidden_size//n_head)
+    t_v = target_opt_block.self_attn.v_proj.weight.view(n_head, hidden_size//n_head, hidden_size)
+    t_v_b = target_opt_block.self_attn.v_proj.bias.view(n_head, hidden_size//n_head)
+    t_q = target_opt_block.self_attn.q_proj.weight.view(n_head, hidden_size//n_head, hidden_size)
+    t_q_b = target_opt_block.self_attn.q_proj.bias.view(n_head, hidden_size//n_head)
+    t_out = target_opt_block.self_attn.out_proj.weight.view(n_head, hidden_size//n_head, hidden_size)
+    t_out_b = target_opt_block.self_attn.out_proj.bias.view(n_head, hidden_size//n_head)
+
+    with torch.no_grad():
+        t_k[head] =  0
+        t_k_b[head] = 0
+        t_v[head] = 0
+        t_v_b[head] = 0
+        t_q[head] = 0
+        t_q_b[head] = 0
+        t_out[head] = 0
+        t_out_b[head] = 0
+
+    model.decoder.layers[layer].self_attn.k_proj.weight = torch.nn.Parameter(t_k.view_as(target_opt_block.self_attn.k_proj.weight))
+    model.decoder.layers[layer].self_attn.k_proj.bias = torch.nn.Parameter(t_k_b.view_as(target_opt_block.self_attn.k_proj.bias))
+    model.decoder.layers[layer].self_attn.v_proj.weight = torch.nn.Parameter(t_v.view_as(target_opt_block.self_attn.v_proj.weight))
+    model.decoder.layers[layer].self_attn.v_proj.bias = torch.nn.Parameter(t_v_b.view_as(target_opt_block.self_attn.v_proj.bias))
+    model.decoder.layers[layer].self_attn.q_proj.weight = torch.nn.Parameter(t_q.view_as(target_opt_block.self_attn.q_proj.weight))
+    model.decoder.layers[layer].self_attn.q_proj.bias = torch.nn.Parameter(t_q_b.view_as(target_opt_block.self_attn.q_proj.bias))
+    model.decoder.layers[layer].self_attn.out_proj.weight = torch.nn.Parameter(t_out.view_as(target_opt_block.self_attn.out_proj.weight))
+    model.decoder.layers[layer].self_attn.out_proj.bias = torch.nn.Parameter(t_out_b.view_as(target_opt_block.self_attn.out_proj.bias))
+    return model
+
+def prune_bloom(model, layer, head):
+    target_bloom_block = model.h[layer]
+    attention_weight = target_bloom_block.self_attention.query_key_value.weight
+    attention_bias = target_bloom_block.self_attention.query_key_value.bias
+    hidden_size = model.config.hidden_size
+    n_head = model.config.n_head
+    hidden_size = model.config.hidden_size
+    # hiddensize, 3, n_head, head size
+    # query key value 
+    attention_weight = attention_weight.view(n_head, 3,hidden_size//n_head, hidden_size)
+    attention_bias = attention_bias.view(n_head, 3, hidden_size//n_head)
+
+    with torch.no_grad():
+        attention_weight[head] = 0
+        attention_bias[head] = 0
+        
+    model.h[layer].self_attention.query_key_value.weight = torch.nn.Parameter(attention_weight.view_as(target_bloom_block.self_attention.query_key_value.weight))
+    model.h[layer].self_attention.query_key_value.bias = torch.nn.Parameter(attention_bias.view_as(target_bloom_block.self_attention.query_key_value.bias))
+    return model
+
+def prune(model, prune_dict):
+    if "bloom" in model.config._name_or_path:
+        prune_fn = prune_bloom
+    elif "opt" in model.config._name_or_path:
+        prune_fn = prune_opt
+    else:
+        raise ValueError(f"Model {model.config._name_or_path} not supported")
+    
+    for layer in prune_dict.keys():
+        for head in prune_dict[layer]:
+            model = prune_fn(model, layer, head)
+    return model
+
 def duplicate_prune(model, source_layer, source_head, target_layer, target_head):
     if "bloom" in model.config._name_or_path:
         model = duplicate_prune_bloom(model, source_layer, source_head, target_layer, target_head)
@@ -107,7 +174,7 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
     pruning_log = []
     if prune_method == "balanced":
         layers_clustering_dict = get_clustering_dict(prompts, model, tokenizer,n_layers=n_layers, n_groups=n_groups, n_heads=n_head, metric=metric)
-        for layer_number in layers_clustering_dict.keys():
+        for layer_number in tqdm(layers_clustering_dict.keys()):
             if group_metric != 'random':
                 squaref = squareform(pdist(attentions[layer_number].view(n_head, -1), metric=group_metric))
             layer_clusters = layers_clustering_dict[layer_number]
