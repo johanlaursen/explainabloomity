@@ -292,6 +292,13 @@ def get_opt_attention_weights(model, layer, head):
     return k, k_b, v, v_b, q, q_b, out, out_b
 
 def get_model_layers_and_heads(config):
+    if type(config) == str:
+        if config == "opt-13b":
+            layers = 40
+            heads = 40
+            return layers, heads
+        else:
+            raise ValueError("Model not supported")
     if "bloom" in config._name_or_path:
         heads = config.n_head
         layers = config.n_layer
