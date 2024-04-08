@@ -1,0 +1,59 @@
+{
+  "results": {
+    "blimp_ellipsis_n_bar_1": {
+      "acc,none": 0.476,
+      "acc_stderr,none": 0.015801065586651758,
+      "alias": "blimp_ellipsis_n_bar_1"
+    }
+  },
+  "configs": {
+    "blimp_ellipsis_n_bar_1": {
+      "task": "blimp_ellipsis_n_bar_1",
+      "group": "blimp",
+      "dataset_path": "blimp",
+      "dataset_name": "ellipsis_n_bar_1",
+      "validation_split": "train",
+      "doc_to_text": "",
+      "doc_to_target": 0,
+      "doc_to_choice": "{{[sentence_good, sentence_bad]}}",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc"
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": true,
+      "doc_to_decontamination_query": "{{sentence_good}} {{sentence_bad}}",
+      "metadata": [
+        {
+          "version": 1.0
+        }
+      ]
+    }
+  },
+  "versions": {
+    "blimp_ellipsis_n_bar_1": "Yaml"
+  },
+  "n-shot": {
+    "blimp_ellipsis_n_bar_1": 0
+  },
+  "config": {
+    "model": "hf",
+    "model_args": "pretrained=/home/data_shares/mapillary/thesis_models/pruned_models/opt-13b/balanced/hellaswag/euclidean_random/0.75/model,dtype=float16",
+    "batch_size": "auto",
+    "batch_sizes": [
+      64
+    ],
+    "device": "cuda:0",
+    "use_cache": null,
+    "limit": null,
+    "bootstrap_iters": 100000,
+    "gen_kwargs": {}
+  },
+  "git_hash": "4deb1c3"
+}

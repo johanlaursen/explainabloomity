@@ -1,0 +1,62 @@
+{
+  "results": {
+    "paws_en": {
+      "acc,none": 0.434,
+      "acc_stderr,none": 0.011085280407858918,
+      "alias": "paws_en"
+    }
+  },
+  "configs": {
+    "paws_en": {
+      "task": "paws_en",
+      "group": "pawsx",
+      "dataset_path": "paws-x",
+      "dataset_name": "en",
+      "training_split": "train",
+      "validation_split": "validation",
+      "test_split": "test",
+      "doc_to_text": "",
+      "doc_to_target": "label",
+      "doc_to_choice": "{{[sentence1+\", right? Yes, \"+sentence2, sentence1+\", right? No, \"+sentence2]}}",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc",
+          "aggregation": "mean",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": false,
+      "metadata": [
+        {
+          "version": 0.0
+        }
+      ]
+    }
+  },
+  "versions": {
+    "paws_en": "Yaml"
+  },
+  "n-shot": {
+    "paws_en": 0
+  },
+  "config": {
+    "model": "hf",
+    "model_args": "pretrained=/home/data_shares/mapillary/thesis_models/pruned_models/opt-13b/balanced/paws_en/euclidean_euclidean/0.25/model,dtype=float16",
+    "batch_size": "auto",
+    "batch_sizes": [
+      32
+    ],
+    "device": "cuda:0",
+    "use_cache": null,
+    "limit": null,
+    "bootstrap_iters": 100000,
+    "gen_kwargs": {}
+  },
+  "git_hash": "9034578"
+}
