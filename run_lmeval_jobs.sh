@@ -6,9 +6,10 @@ base_models=(
     
 )
 prunetasks=(
-    "paws_en"
+    # "paws_en"
     # "hellaswag"
-    # "arc_easy"
+    "arc_easy"
+    "blimp_ellipsis_n_bar_1"
 )
 pruning_methods=(
     "balanced"

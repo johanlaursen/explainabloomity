@@ -62,8 +62,8 @@ do
         for prune_percent in "${prune_ratios[@]}"
         do
             model_path="${model}/${prunemethod}/${prunetask}/${metric}/${prune_percent}"
-            model_args="pretrained=${path}${model}/model,dtype=float16"
-            echo "model_path=${model_path}"
+            model_args="pretrained=${path}${model_path}/model,dtype=float16"
+            echo "path=${path}${model_path}/model"
             lm_eval --model "hf" \
             --model_args $model_args  \
             --tasks $task  \

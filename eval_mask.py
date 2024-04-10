@@ -31,9 +31,9 @@ metrics=(
 )
 prunetasks=(
     "paws_en",
-    # "hellaswag",
-    # "arc_easy",
-    # "blimp_ellipsis_n_bar_1",
+    "hellaswag",
+    "arc_easy",
+    "blimp_ellipsis_n_bar_1",
 )
 
 prune_percents=(
@@ -42,12 +42,12 @@ prune_percents=(
     "0.75",
 )
 tasks=(
-    # "lambada_openai",
+    "lambada_openai",
     "paws_en",
-    # "hellaswag",
-    # "arc_easy",
-    # "blimp_ellipsis_n_bar_1",
-    # "blimp_irregular_plural_subject_verb_agreement_1"
+    "hellaswag",
+    "arc_easy",
+    "blimp_ellipsis_n_bar_1",
+    "blimp_irregular_plural_subject_verb_agreement_1"
 )
 for model in models:
     for prune_method in prune_methods:
@@ -81,21 +81,21 @@ for model in models:
                         # "head_mask": mask,
                         "device": "cuda:0"
                         }
-                        model = huggingface.HFLM(**model_args)
-                        model._model= prune(model._model, pruning_dict)
+                        model_lm = huggingface.HFLM(**model_args)
+                        model_lm._model.model= prune(model_lm._model.model, pruning_dict)
+                        print("Pruning done for: ", model, prune_method, metric, prunetask, prune_percent, task)
                         results = simple_evaluate(
-                            model = model,
+                            model = model_lm,
                             batch_size = "auto",
                             device = "cuda:0",
                             num_fewshot = 0,
                             tasks=[task],
                         )
+                        model_lm._model.to('cpu')
+                        torch.cuda.empty_cache()
                         output_path = Path(f"results/{task}/{model_path}")
                         output_path.mkdir(parents=True, exist_ok=True)
                         output_path_file = output_path.joinpath("results.json")
                         dumped = json.dumps(results, indent=2, default=_handle_non_serializable, ensure_ascii=False)
                         output_path_file.open("w", encoding="utf-8").write(dumped)
                         print("Evaluted: ", model, prune_method, metric, prunetask, prune_percent, task)
-
-                        
-                        

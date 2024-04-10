@@ -17,18 +17,18 @@ prune_methods=(
     # "imbalanced"
 )
 metrics=(
-    "cosine"
+    # "cosine"
     "euclidean"
 )
 prunetasks=(
     #"paws_en"
-    # "hellaswag"
-    "arc_easy"
+    "hellaswag"
+    # "arc_easy"
 )
 prune_percents=(
     "0.25"
-    "0.5"
-    "0.75"
+    # "0.5"
+    # "0.75"
 )
 
 for metric in "${metrics[@]}"
@@ -40,7 +40,7 @@ do
             for prunemethod in "${prune_methods[@]}"
             do
                 sbatch --job-name="${prunemethod}_${model_basename}_${metric}_${prune_percent}_${prompt}" prune.job $prune_percent $metric $model_name $path $prunetask $metric $prunemethod
-                sbatch --job-name="${prunetype}_${model_basename}_${metric}_${prune_percent}_${prompt}" prune.job $prune_percent $metric $model_name $path $prunetask "random" $prunemethod
+                # sbatch --job-name="${prunetype}_${model_basename}_${metric}_${prune_percent}_${prompt}" prune.job $prune_percent $metric $model_name $path $prunetask "random" $prunemethod
             done
         done
         # Note if it is balanced or unbalanced
