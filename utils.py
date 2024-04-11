@@ -272,7 +272,7 @@ def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', 
                 group_indices[group].append(index)
 
             layer_clusters_dict[i] = list(group_indices.values())
-        return layer_clusters_dict
+        return layer_clusters_dict, attention_maps, attention_vectors
     else:
         attention_maps = get_attention_multiple_inputs(prompts, model, tokenizer, first_token=True)
         attention_vectors = attention_vector_multiple_inputs(attention_maps)
@@ -285,7 +285,7 @@ def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', 
         for layer in range(n_layers):
             for index, group in enumerate(clusters[layer*n_heads:(layer+1)*n_heads]):
                 group_indices[group].append((layer,index))
-        return group_indices
+        return group_indices, attention_maps, attention_vectors
 
 def get_bloom_attention_weights(model,layer,head):
     """Get attention weights for a specific layer and head
@@ -490,8 +490,16 @@ def save_pruning_log(path, pruning_log):
     file_path = f"pruning_logs/{path}/pruning_log.txt"
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, "w") as f:
-        for layer, head_to_keep, head_to_remove in pruning_log:
-            f.write(f"{layer}, {head_to_keep}, {head_to_remove}\n")
+        # For pruning log for balanced pruning
+        if len(pruning_log[0]) == 3:
+            for layer, head_to_keep, head_to_remove in pruning_log:
+                f.write(f"{layer}, {head_to_keep}, {head_to_remove}\n")
+        # For pruning log for imbalanced pruning
+        else:
+            for head_to_keep, head_to_remove in pruning_log:
+                f.write(f"{head_to_keep[0]}, {head_to_keep[1]}, {head_to_remove[0]}, {head_to_remove[1]}\n")
+            
+
             
 def get_prompts_from_file(prune_task):
     file_path = "tasks/" + prune_task + ".tsv"

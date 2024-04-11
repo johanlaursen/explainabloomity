@@ -162,21 +162,20 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
         saves the model to model folder
     '''
     
-    attentions = get_attention_multiple_inputs(prompts, model, tokenizer)
     n_layers, n_head = get_model_layers_and_heads(model.config)
     n_groups = n_head - int(n_head * prune_percent)
     # attention is tuple of len(layers) where 
     # each element is a tensor of shape 
     # (num_prompts, num_heads, num_tokens, num_tokens)
 
-    # TODO get_clustering dict should use metric
     counter = Counter()
     pruning_log = []
     if prune_method == "balanced":
-        layers_clustering_dict = get_clustering_dict(prompts, model, tokenizer,n_layers=n_layers, n_groups=n_groups, n_heads=n_head, metric=metric)
+        layers_clustering_dict, attentions, attention_vectors = get_clustering_dict(prompts, model, tokenizer,n_layers=n_layers, n_groups=n_groups, n_heads=n_head, metric=metric)
         for layer_number in tqdm(layers_clustering_dict.keys()):
             if group_metric != 'random':
-                squaref = squareform(pdist(attentions[layer_number].view(n_head, -1), metric=group_metric))
+                layer_heads = attention_vectors[layer_number*n_head:(layer_number+1)*n_head]
+                squaref = squareform(pdist(layer_heads, metric=group_metric))
             layer_clusters = layers_clustering_dict[layer_number]
             for group in layer_clusters:
                 group_scores = defaultdict(int)
@@ -207,38 +206,40 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
             print("size of groups: ", counter)
 
     elif prune_method == "imbalanced":
-        total_heads = n_head * n_layers
-        heads_to_prune = int(total_heads * prune_percent)
-        head_similarity_scores = []
-        for layer_number in range(n_layers):
-            if group_metric != 'random':
-                squaref = squareform(pdist(attentions[layer_number].view(n_head, -1), metric=metric))
-            for head_id in range(n_head):
+        clustering_dict, attentions, attention_vectors = get_clustering_dict(prompts, model, tokenizer,n_layers=n_layers, n_groups=n_groups, n_heads=n_head, metric=metric, by_layer=False)
+        if group_metric != 'random':
+            squaref = squareform(pdist(attention_vectors, metric=group_metric))
+        for group in clustering_dict.values():
+            counter.update([len(group)])
+            group_scores = defaultdict(int)
+            if len(group) <= 1:
+                continue
+            if len(group) == 2:
+                # with 2 heads just keep the first 1
+                head_to_keep = group[0]
+            else:
                 if group_metric == 'random':
-                    score = random.random()
+                    head_to_keep = random.choice(group)
                 else:
-                    score = sum(squaref[head_id]) / (n_head - 1)  # Average similarity with other heads
-                head_similarity_scores.append((layer_number, head_id, score))
-
-        # Sort by similarity score (lower is better for euclidean, higher for cosine or random)
-        head_similarity_scores.sort(key=lambda x: x[2])
-
-        # Prune the required number of heads based on global ranking
-        pruned_heads = head_similarity_scores[:heads_to_prune]
-
-        for layer_number, head_id, _ in pruned_heads:
-            # Find the most similar head in the same layer to duplicate
-            similar_heads = [x for x in head_similarity_scores if x[0] == layer_number and x[1] != head_id]
-            if similar_heads:
-                # Sort by similarity (most similar first)
-                similar_heads.sort(key=lambda x: x[2])
-                target_head = similar_heads[0][1]
-                model = duplicate_prune(model, source_layer=layer_number, source_head=target_head, target_layer=layer_number, target_head=head_id)
-        
-        if verbose:
-            print(f'Pruned {len(pruned_heads)} heads out of {total_heads}')
+                    for head_id in group:
+                        for head_id_2 in group:
+                            if head_id == head_id_2:
+                                continue
+                            head1 = head_id[0]*n_head + head_id[1]
+                            head2 = head_id_2[0]*n_head + head_id_2[1]
+                            group_scores[head_id] += squaref[head1, head2]
+                    head_to_keep = min(group_scores, key=lambda k: group_scores[k])
                 
-    # met = metric[:3]
+        for head in group:
+            if head == head_to_keep:
+                continue
+            head_to_remove = head
+            pruning_log.append((head_to_keep, head_to_remove))
+            model = duplicate_prune(model, source_layer=head_to_keep[0], source_head=head_to_keep[1], target_layer=head_to_remove[0], target_head=head_to_remove[1])
+
+        if verbose:
+            print(counter)
+                
     prune_metric = metric + "_" + group_metric
     model_name = os.path.basename(model_name)
     path_model = f"{model_name}/{prune_method}/{prune_task}/{prune_metric}/{prune_percent}"
