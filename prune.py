@@ -206,7 +206,9 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
             print("size of groups: ", counter)
 
     elif prune_method == "imbalanced":
+        print("Clustering")
         clustering_dict, attentions, attention_vectors = get_clustering_dict(prompts, model, tokenizer,n_layers=n_layers, n_groups=n_groups, n_heads=n_head, metric=metric, by_layer=False)
+        print("Clustering Done")
         if group_metric != 'random':
             squaref = squareform(pdist(attention_vectors, metric=group_metric))
         for group in clustering_dict.values():
