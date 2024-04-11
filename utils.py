@@ -223,28 +223,43 @@ def get_group_dict(clusters, n_layers=24, n_heads=16):
                 group_dict[clusters[i*n_heads + j]].append((i, j))
     return group_dict
 
-def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', n_layers=24, n_heads=16):
+def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', n_layers=24, n_heads=16, by_layer=True):
     """
-    Returns a dictionary with layer number as key and list of attention heads as value
+    Returns a dictionary with layer number as key and list of attention heads as value when by_layer = True
+
+    Otherwise returns a dictionary with group number as key and list of (layer, head) tuples as value
     """
-    attention_maps = get_attention_multiple_inputs(prompts, model, tokenizer, first_token=True)
-    attention_vectors = attention_vector_multiple_inputs(attention_maps)
-    clusters = dict()
-    for i in range(n_layers):
-        layer_heads = attention_vectors[i*n_heads:(i+1)*n_heads]
-        distance_matrix = squareform(pdist(layer_heads, metric=metric))
+    if by_layer:
+        attention_maps = get_attention_multiple_inputs(prompts, model, tokenizer, first_token=True)
+        attention_vectors = attention_vector_multiple_inputs(attention_maps)
+        clusters = dict()
+        for i in range(n_layers):
+            layer_heads = attention_vectors[i*n_heads:(i+1)*n_heads]
+            distance_matrix = squareform(pdist(layer_heads, metric=metric))
+            hc_linkage = linkage(distance_matrix, method='ward')
+            clusters[i] = fcluster(hc_linkage, n_groups, criterion='maxclust')
+
+        layer_clusters_dict = dict()
+        for i in range(n_layers):
+            group_indices = defaultdict(list)
+            for index, group in enumerate(clusters[i]):
+                group_indices[group].append(index)
+
+            layer_clusters_dict[i] = list(group_indices.values())
+        return layer_clusters_dict
+    else:
+        attention_maps = get_attention_multiple_inputs(prompts, model, tokenizer, first_token=True)
+        attention_vectors = attention_vector_multiple_inputs(attention_maps)
+        # clusters = dict()
+        distance_matrix = pdist(attention_vectors, metric=metric)
         hc_linkage = linkage(distance_matrix, method='ward')
-        clusters[i] = fcluster(hc_linkage, n_groups, criterion='maxclust')
-
-    layer_clusters_dict = dict()
-    for i in range(n_layers):
+        clusters = fcluster(hc_linkage, n_groups, criterion='maxclust')
         group_indices = defaultdict(list)
-        for index, group in enumerate(clusters[i]):
-            group_indices[group].append(index)
 
-        layer_clusters_dict[i] = list(group_indices.values())
-
-    return layer_clusters_dict
+        for layer in range(n_layers):
+            for index, group in enumerate(clusters[layer*n_heads:(layer+1)*n_heads]):
+                group_indices[group].append((layer,index))
+        return group_indices
 
 def get_bloom_attention_weights(model,layer,head):
     """Get attention weights for a specific layer and head
