@@ -261,7 +261,7 @@ def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', 
         clusters = dict()
         for i in range(n_layers):
             layer_heads = attention_vectors[i*n_heads:(i+1)*n_heads]
-            distance_matrix = squareform(pdist(layer_heads, metric=metric))
+            distance_matrix = pdist(layer_heads, metric=metric)
             hc_linkage = linkage(distance_matrix, method='ward')
             clusters[i] = fcluster(hc_linkage, n_groups, criterion='maxclust')
 
