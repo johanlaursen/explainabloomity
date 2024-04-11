@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import torch
+from torch.utils.data import DataLoader
 import random
 import json
 import numpy as np
@@ -177,6 +178,31 @@ def get_attention_multiple_inputs(prompts, model, tokenizer, first_token=True):
         outputs = model(**inputs)
         attention = outputs[-1]
     return attention
+
+def get_batched_attention(prompts, model, tokenizer, batch_size=10, first_token=True):
+    """Returns tuple of len(layers) attention maps for each layer 
+    each attention map is of shape (total_prompts, num_heads, max_seq_len, max_seq_len)"""
+    
+    # Calculate the maximum length after tokenization
+    max_length = max(len(tokenizer.encode(prompt)) for prompt in prompts)
+
+    # Create a DataLoader for batch processing
+    prompts_dataloader = DataLoader(prompts, batch_size=batch_size)
+
+    all_attention_maps = []
+
+    for batch_prompts in prompts_dataloader:
+        inputs = tokenizer(list(batch_prompts), return_tensors='pt', padding='max_length', truncation=True, max_length=max_length)
+        with torch.no_grad():
+            outputs = model(**inputs)
+            attention = outputs[-1]
+
+        all_attention_maps.append(attention)
+
+    # Concatenate attention maps across all batches
+    concatenated_attention_maps = [torch.cat([batch[i] for batch in all_attention_maps], dim=0) for i in range(len(all_attention_maps[0]))]
+
+    return concatenated_attention_maps
 
 def attention_vector_multiple_inputs(attention_maps):
     head_attentions = dict()
