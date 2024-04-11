@@ -256,7 +256,7 @@ def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', 
     Otherwise returns a dictionary with group number as key and list of (layer, head) tuples as value
     """
     if by_layer:
-        attention_maps = get_attention_multiple_inputs(prompts, model, tokenizer, first_token=True)
+        attention_maps = get_batched_attention(prompts, model, tokenizer, first_token=True)
         attention_vectors = attention_vector_multiple_inputs(attention_maps)
         clusters = dict()
         for i in range(n_layers):
