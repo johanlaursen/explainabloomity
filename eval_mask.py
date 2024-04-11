@@ -24,10 +24,10 @@ prune_methods=(
     # "imbalanced" ,
 )
 metrics=(
-    "cosine_cosine" ,
-    # "euclidean_euclidean" ,
-    # "cosine_random",
-    # "euclidean_random",
+    # "cosine_cosine" ,
+    "euclidean_euclidean" ,
+    "cosine_random",
+    "euclidean_random",
 )
 prunetasks=(
     "paws_en",
