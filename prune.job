@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --account=researchers
-#SBATCH --output=logs/pruning/R-%x.%j.out      # Name of output file (%j expands to jobId)
+#SBATCH --output=logs/pruning_imbalanced/R-%x.%j.out      # Name of output file (%j expands to jobId)
 # #SBATCH --error=logs/R-%x.%j.err     # Error handling
 #SBATCH --nodes=1                # Total number of nodes requested
 #SBATCH --cpus-per-task=4        # Schedule 8 cores (includes hyperthreading)

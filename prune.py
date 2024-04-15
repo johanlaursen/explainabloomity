@@ -163,7 +163,6 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
     '''
     
     n_layers, n_head = get_model_layers_and_heads(model.config)
-    n_groups = n_head - int(n_head * prune_percent)
     # attention is tuple of len(layers) where 
     # each element is a tensor of shape 
     # (num_prompts, num_heads, num_tokens, num_tokens)
@@ -171,6 +170,7 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
     counter = Counter()
     pruning_log = []
     if prune_method == "balanced":
+        n_groups = n_head - int(n_head * prune_percent)
         layers_clustering_dict, attentions, attention_vectors = get_clustering_dict(prompts, model, tokenizer,n_layers=n_layers, n_groups=n_groups, n_heads=n_head, metric=metric)
         for layer_number in tqdm(layers_clustering_dict.keys()):
             if group_metric != 'random':
@@ -206,6 +206,7 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
             print("size of groups: ", counter)
 
     elif prune_method == "imbalanced":
+        n_groups = (n_head * n_layers) - int(n_layers * n_head * prune_percent)
         print("Clustering")
         clustering_dict, attentions, attention_vectors = get_clustering_dict(prompts, model, tokenizer,n_layers=n_layers, n_groups=n_groups, n_heads=n_head, metric=metric, by_layer=False)
         print("Clustering Done")
@@ -232,12 +233,12 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
                             group_scores[head_id] += squaref[head1, head2]
                     head_to_keep = min(group_scores, key=lambda k: group_scores[k])
                 
-        for head in group:
-            if head == head_to_keep:
-                continue
-            head_to_remove = head
-            pruning_log.append((head_to_keep, head_to_remove))
-            model = duplicate_prune(model, source_layer=head_to_keep[0], source_head=head_to_keep[1], target_layer=head_to_remove[0], target_head=head_to_remove[1])
+            for head in group:
+                if head == head_to_keep:
+                    continue
+                head_to_remove = head
+                pruning_log.append((head_to_keep, head_to_remove))
+                model = duplicate_prune(model, source_layer=head_to_keep[0], source_head=head_to_keep[1], target_layer=head_to_remove[0], target_head=head_to_remove[1])
 
         if verbose:
             print(counter)
