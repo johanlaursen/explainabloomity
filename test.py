@@ -21,33 +21,45 @@ import json
 from scipy.spatial.distance import pdist, squareform
 from datasets import load_dataset
 from collections import defaultdict, Counter
+from prune import duplicate_prune_model
+from utils import *
+import pickle
 
+#model_name = "bigscience/bloom-560m"
+model_name = "facebook/opt-13b"
+model = AutoModel.from_pretrained(model_name, output_attentions=True)#.to(device)  # Configure model to return attention values
+tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
+prompt = "A man is riding on a horse. he runs after a calf and ties its legs."
+
+def get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True):
+    inputs = tokenizer.encode(prompt, return_tensors='pt')#.to(device)
+    tokens = tokenizer.convert_ids_to_tokens(inputs[0])
+    with torch.no_grad():
+        outputs = model(inputs) 
+        attention = outputs[-1]
+    if not first_token:
+        attention = delete_first_token(attention)    
+    return attention, tokens
+
+att, tok = get_attention(prompt)
+#pickle attention
+with open('attention.pkl', 'wb') as f:
+    pickle.dump(att, f)
+
+inputs = tokenizer.encode(prompt, return_tensors='pt')
+tok= tokenizer.convert_ids_to_tokens(inputs[0])
+att = pickle.load(open('attention.pkl', 'rb'))
+model_view(att, tok)  # Display model view
+#head_view(att, tok, layer=15, heads=[1])
+
+#visualize_all(attention, n_layers=24, n_heads=16, figname='test.png')
+#attention_weights = attention[20][:, 12, :, :] # Get the first layer [0], and the first attention head's attention
+#visualize_single(attention_weights, tokens)
+
+task = get_prompts_from_file("arc_easy")
+model_path = duplicate_prune_model(prompts=task, path="models/", model=model, model_name=model_name, tokenizer=tokenizer, prune_percent=0.5, prune_task="arc_easy", metric="cosine", group_metric="cosine", prune_method="imbalanced", verbose=True)
 blimp = load_dataset("nyu-mll/blimp", "ellipsis_n_bar_1", split="train")
 
-def get_blimp_ellipsis_data(n_samples=100, save_to_file=False, file_name=None):
-    """
-    Gets a random sample of training data from a given dataset.
-    Returns a list of tuples, where each tuple contains a modified sample and its ID.
-    """
-    dataset = load_dataset("nyu-mll/blimp", "ellipsis_n_bar_1", split="train")
-    random_sample = dataset.shuffle(seed=42)[:n_samples]
-
-    training_samples = []
-    for i in range(len(random_sample["pair_id"])):
-        sentence = random_sample["sentence_good"][i]
-        training_samples.append((sentence,random_sample["pair_id"][i]))
-
-    if save_to_file:
-        if file_name is None:
-            file_name = f"tasks/blimp_ellipsis_n_bar_1.tsv"
-        df = pd.DataFrame(training_samples, columns=["prompt", "id"])
-        df.to_csv(file_name, sep="\t", index=False, header=False)
-        
-    return training_samples
-
-get_blimp_ellipsis_data(save_to_file=True)
-
-lambada = load_dataset("lambada")
 
 #if torch.cuda.is_available():
 #    device = torch.device("cuda")
