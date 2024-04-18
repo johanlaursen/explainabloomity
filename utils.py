@@ -6,6 +6,7 @@ import json
 import numpy as np
 import pandas as pd
 from pathlib import Path
+import pickle
 import os
 import re
 from collections import defaultdict, Counter
@@ -566,7 +567,7 @@ def get_results(path="/mnt/c/github/explainabloomity/results"):
     df = pd.DataFrame(rows)
     return df
 
-def get_amazon_attention_mask(path = 'head_importance/0shot_arc_easy.pkl', head_percent_mask = 50):
+def get_amazon_attention_mask(path = 'head_importance/0shot_hellaswag.pkl', head_percent_mask = 50):
     head_importance = pickle.load(open(path, 'rb'))
     num_hidden_layers = head_importance.shape[0]
     num_heads= head_importance.shape[1]
