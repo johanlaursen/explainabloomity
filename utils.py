@@ -252,6 +252,7 @@ def get_group_dict(clusters, n_layers=24, n_heads=16):
 
 def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', n_layers=24, n_heads=16, by_layer=True):
     """
+    n_groups is a int if pruning same number of heads from each layer, a list of ints if pruning is variable
     Returns a dictionary with layer number as key and list of attention heads as value when by_layer = True
 
     Otherwise returns a dictionary with group number as key and list of (layer, head) tuples as value
@@ -264,7 +265,12 @@ def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', 
             layer_heads = attention_vectors[i*n_heads:(i+1)*n_heads]
             distance_matrix = pdist(layer_heads, metric=metric)
             hc_linkage = linkage(distance_matrix, method='ward')
-            clusters[i] = fcluster(hc_linkage, n_groups, criterion='maxclust')
+            if type(n_groups) == int:
+                clusters[i] = fcluster(hc_linkage, n_groups, criterion='maxclust')
+            elif type(n_groups) == list:
+                clusters[i] = fcluster(hc_linkage, n_groups[i], criterion='maxclust')
+            else:
+                raise ValueError("n_groups must be an int or a list")
 
         layer_clusters_dict = dict()
         for i in range(n_layers):
@@ -578,3 +584,14 @@ def get_amazon_attention_mask(path = 'head_importance/0shot_hellaswag.pkl', head
     head_indices = head_indices[: int(head_percent_mask) * len(head_indices) // 100]
     head_mask[head_indices] = 0.
     return head_mask
+
+def get_amazon_prune_groups(path="head_importance/0shot_hellaswag.pkl", head_percent=0.5):
+    head_percent_mask = head_percent * 100
+    head_mask = get_amazon_attention_mask(path, head_percent_mask)
+    layers = 40
+    n_head = 40
+    n_groups = []
+    for layer_number in range(layers):
+        layer_heads = head_mask[layer_number*n_head:(layer_number+1)*n_head]
+        n_groups.append(int(layer_heads.sum().item()))
+    return n_groups

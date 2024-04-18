@@ -169,8 +169,11 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
 
     counter = Counter()
     pruning_log = []
-    if prune_method == "balanced":
-        n_groups = n_head - int(n_head * prune_percent)
+    if prune_method == "balanced" or prune_method == "imbalanced_amazon":
+        if prune_method == "balanced":
+            n_groups = n_head - int(n_head * prune_percent)
+        elif prune_method == "imbalanced_amazon":
+            n_groups = get_amazon_prune_groups(prune_percent)
         layers_clustering_dict, attentions, attention_vectors = get_clustering_dict(prompts, model, tokenizer,n_layers=n_layers, n_groups=n_groups, n_heads=n_head, metric=metric)
         for layer_number in tqdm(layers_clustering_dict.keys()):
             if group_metric != 'random':
@@ -242,7 +245,8 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
 
         if verbose:
             print(counter)
-                
+
+
     prune_metric = metric + "_" + group_metric
     model_name = os.path.basename(model_name)
     path_model = f"{model_name}/{prune_method}/{prune_task}/{prune_metric}/{prune_percent}"
