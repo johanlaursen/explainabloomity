@@ -173,7 +173,7 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
         if prune_method == "balanced":
             n_groups = n_head - int(n_head * prune_percent)
         elif prune_method == "imbalanced_amazon":
-            n_groups = get_amazon_prune_groups(prune_percent)
+            n_groups = get_amazon_prune_groups(head_percent=prune_percent)
         layers_clustering_dict, attentions, attention_vectors = get_clustering_dict(prompts, model, tokenizer,n_layers=n_layers, n_groups=n_groups, n_heads=n_head, metric=metric)
         for layer_number in tqdm(layers_clustering_dict.keys()):
             if group_metric != 'random':
