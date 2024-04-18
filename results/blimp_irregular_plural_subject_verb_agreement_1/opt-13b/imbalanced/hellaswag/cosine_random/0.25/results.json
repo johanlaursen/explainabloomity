@@ -1,0 +1,57 @@
+{
+  "results": {
+    "blimp_irregular_plural_subject_verb_agreement_1": {
+      "acc,none": 0.929,
+      "acc_stderr,none": 0.008125578442487921,
+      "alias": "blimp_irregular_plural_subject_verb_agreement_1"
+    }
+  },
+  "configs": {
+    "blimp_irregular_plural_subject_verb_agreement_1": {
+      "task": "blimp_irregular_plural_subject_verb_agreement_1",
+      "group": "blimp",
+      "dataset_path": "blimp",
+      "dataset_name": "irregular_plural_subject_verb_agreement_1",
+      "validation_split": "train",
+      "doc_to_text": "",
+      "doc_to_target": 0,
+      "doc_to_choice": "{{[sentence_good, sentence_bad]}}",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc"
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": true,
+      "doc_to_decontamination_query": "{{sentence_good}} {{sentence_bad}}",
+      "metadata": {
+        "version": 1.0
+      }
+    }
+  },
+  "versions": {
+    "blimp_irregular_plural_subject_verb_agreement_1": 1.0
+  },
+  "n-shot": {
+    "blimp_irregular_plural_subject_verb_agreement_1": 0
+  },
+  "config": {
+    "model": "hf",
+    "model_args": "pretrained=/home/data_shares/mapillary/thesis_models/pruned_models/opt-13b/imbalanced/hellaswag/cosine_random/0.25/model,dtype=float16",
+    "batch_size": "auto",
+    "batch_sizes": [
+      64
+    ],
+    "device": "cuda:0",
+    "use_cache": null,
+    "limit": null,
+    "bootstrap_iters": 100000,
+    "gen_kwargs": null
+  },
+  "git_hash": "5e55e6d"
+}

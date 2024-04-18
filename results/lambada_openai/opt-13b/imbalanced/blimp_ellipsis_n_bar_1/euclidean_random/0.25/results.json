@@ -1,0 +1,67 @@
+{
+  "results": {
+    "lambada_openai": {
+      "perplexity,none": 25.15503855745048,
+      "perplexity_stderr,none": 0.7987823329765213,
+      "acc,none": 0.35979041335144574,
+      "acc_stderr,none": 0.0066864862064887915,
+      "alias": "lambada_openai"
+    }
+  },
+  "configs": {
+    "lambada_openai": {
+      "task": "lambada_openai",
+      "group": [
+        "lambada"
+      ],
+      "dataset_path": "EleutherAI/lambada_openai",
+      "dataset_name": "default",
+      "test_split": "test",
+      "doc_to_text": "{{text.split(' ')[:-1]|join(' ')}}",
+      "doc_to_target": "{{' '+text.split(' ')[-1]}}",
+      "description": "",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "perplexity",
+          "aggregation": "perplexity",
+          "higher_is_better": false
+        },
+        {
+          "metric": "acc",
+          "aggregation": "mean",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "loglikelihood",
+      "repeats": 1,
+      "should_decontaminate": true,
+      "doc_to_decontamination_query": "{{text}}",
+      "metadata": {
+        "version": 1.0
+      }
+    }
+  },
+  "versions": {
+    "lambada_openai": 1.0
+  },
+  "n-shot": {
+    "lambada_openai": 0
+  },
+  "config": {
+    "model": "hf",
+    "model_args": "pretrained=/home/data_shares/mapillary/thesis_models/pruned_models/opt-13b/imbalanced/blimp_ellipsis_n_bar_1/euclidean_random/0.25/model,dtype=float16",
+    "batch_size": "auto",
+    "batch_sizes": [
+      8
+    ],
+    "device": "cuda:0",
+    "use_cache": null,
+    "limit": null,
+    "bootstrap_iters": 100000,
+    "gen_kwargs": null
+  },
+  "git_hash": "5e55e6d"
+}
