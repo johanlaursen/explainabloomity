@@ -250,16 +250,47 @@ def get_group_dict(clusters, n_layers=24, n_heads=16):
                 group_dict[clusters[i*n_heads + j]].append((i, j))
     return group_dict
 
-def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', n_layers=24, n_heads=16, by_layer=True):
+def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', n_layers=24, n_heads=16, by_layer=True, prune_percent=0.5):
     """
-    n_groups is a int if pruning same number of heads from each layer, a list of ints if pruning is variable
+    n_groups is a int if pruning same number of heads from each layer, a list of ints if pruning is variable and None if determining ourself
     Returns a dictionary with layer number as key and list of attention heads as value when by_layer = True
 
     Otherwise returns a dictionary with group number as key and list of (layer, head) tuples as value
     """
+
+    attention_maps = get_batched_attention(prompts, model, tokenizer, first_token=True)
+    attention_vectors = attention_vector_multiple_inputs(attention_maps)
+
+    if type(n_groups) is None:
+        distances_list = []
+        heads_to_prune = prune_percent * n_layers * n_heads
+        for layer_number in range(n_layers):
+            layer_heads = attention_vectors[layer_number*n_heads:(layer_number+1)*n_heads]
+            squaref = squareform(pdist(layer_heads, metric=metric))
+            for head_id, squaref_row in enumerate(squaref):
+                squaref_row_updated = []
+                for target_head_id, distance in enumerate(squaref_row):
+                    squaref_row_updated.append((target_head_id, distance))
+                squaref_row_updated.pop(head_id) # Remove the distance to itself
+                squaref_row_updated.sort(key=lambda x: x[1])
+                distances_list.append([layer_number, head_id, squaref_row_updated])
+        heads_pruned = set()
+        while heads_to_prune != 0:
+            distances_list.sort(key=lambda x: x[2][0][1])
+            # Remove the head with the smallest distance
+            layer_number, head_id, squaref_row = distances_list[0]
+            min_dist_head = squaref_row[0][0]
+            if (layer_number, min_dist_head) not in heads_pruned:
+                heads_pruned.add((layer_number, min_dist_head))
+                heads_to_prune -= 1
+                distances_list.pop(0)
+            else:
+                distances_list[0][2].pop(0)
+        n_groups = [n_heads] * n_layers
+        for head in heads_pruned:
+            n_groups[head[0]] -= 1
+
     if by_layer:
-        attention_maps = get_batched_attention(prompts, model, tokenizer, first_token=True)
-        attention_vectors = attention_vector_multiple_inputs(attention_maps)
         clusters = dict()
         for i in range(n_layers):
             layer_heads = attention_vectors[i*n_heads:(i+1)*n_heads]
@@ -281,8 +312,6 @@ def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', 
             layer_clusters_dict[i] = list(group_indices.values())
         return layer_clusters_dict, attention_maps, attention_vectors
     else:
-        attention_maps = get_attention_multiple_inputs(prompts, model, tokenizer, first_token=True)
-        attention_vectors = attention_vector_multiple_inputs(attention_maps)
         # clusters = dict()
         distance_matrix = pdist(attention_vectors, metric=metric)
         hc_linkage = linkage(distance_matrix, method='ward')
