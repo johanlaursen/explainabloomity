@@ -261,7 +261,7 @@ def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', 
     attention_maps = get_batched_attention(prompts, model, tokenizer, first_token=True)
     attention_vectors = attention_vector_multiple_inputs(attention_maps)
 
-    if type(n_groups) is None:
+    if n_groups is None:
         distances_list = []
         heads_to_prune = prune_percent * n_layers * n_heads
         for layer_number in range(n_layers):
