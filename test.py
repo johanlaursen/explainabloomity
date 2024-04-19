@@ -52,6 +52,9 @@ att = pickle.load(open('attention.pkl', 'rb'))
 model_view(att, tok)  # Display model view
 #head_view(att, tok, layer=15, heads=[1])
 
+clustering = pickle.load(open('clustering.pkl', 'rb'))
+clustering
+
 #visualize_all(attention, n_layers=24, n_heads=16, figname='test.png')
 #attention_weights = attention[20][:, 12, :, :] # Get the first layer [0], and the first attention head's attention
 #visualize_single(attention_weights, tokens)
