@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#SBATCH --account=researchers
+#SBATCH --output=logs/pruning_imbalanced/R-%x.%j.out      # Name of output file (%j expands to jobId)
+# #SBATCH --error=logs/R-%x.%j.err     # Error handling
+#SBATCH --nodes=1                # Total number of nodes requested
+#SBATCH --cpus-per-task=4        # Schedule 8 cores (includes hyperthreading)
+#SBATCH --mem=120G
+# #SBATCH --constraint="gpu_rtx8000|gpu_a100_40gb|gpu_v100" # Use either a v100 or a100
+# #SBATCH --gres=gpu:1      #v100:1 or a100_40gb:1 on brown
+#SBATCH --time=0-06:00:00          # Run time (hh:mm:ss) 
+#SBATCH --partition=red,brown    # Run on either the red or brown queue
+
+#srun hostname
+
+# module load Anaconda3
+# source activate thesis
+# conda env list
+
+python prompt.py

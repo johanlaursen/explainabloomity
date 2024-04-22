@@ -180,10 +180,13 @@ def get_attention_multiple_inputs(prompts, model, tokenizer, first_token=True):
         attention = outputs[-1]
     return attention
 
-def get_batched_attention(prompts, model, tokenizer, batch_size=10, first_token=True):
+def get_batched_attention(prompts, model, tokenizer, batch_size=10, first_token=True, prune_task="paws_en"):
     """Returns tuple of len(layers) attention maps for each layer 
     each attention map is of shape (total_prompts, num_heads, max_seq_len, max_seq_len)"""
-    
+    path = f"/home/data_shares/mapillary/prompts/{model.config._name_or_path}/{prune_task}_attention_maps.pkl"
+    if os.path.exists(path):
+        with open(path, "rb") as f:
+            return pickle.load(f)
     # Calculate the maximum length after tokenization
     max_length = max(len(tokenizer.encode(prompt)) for prompt in prompts)
 
@@ -250,7 +253,7 @@ def get_group_dict(clusters, n_layers=24, n_heads=16):
                 group_dict[clusters[i*n_heads + j]].append((i, j))
     return group_dict
 
-def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', n_layers=24, n_heads=16, by_layer=True, prune_percent=0.5):
+def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', n_layers=24, n_heads=16, by_layer=True, prune_percent=0.5, prune_task="paws_en"):
     """
     n_groups is a int if pruning same number of heads from each layer, a list of ints if pruning is variable and None if determining ourself
     Returns a dictionary with layer number as key and list of attention heads as value when by_layer = True
@@ -258,7 +261,7 @@ def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', 
     Otherwise returns a dictionary with group number as key and list of (layer, head) tuples as value
     """
 
-    attention_maps = get_batched_attention(prompts, model, tokenizer, first_token=True)
+    attention_maps = get_batched_attention(prompts, model, tokenizer, first_token=True, prune_task=prune_task)
     attention_vectors = attention_vector_multiple_inputs(attention_maps)
 
     if n_groups is None:
