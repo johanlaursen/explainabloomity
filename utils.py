@@ -183,7 +183,8 @@ def get_attention_multiple_inputs(prompts, model, tokenizer, first_token=True):
 def get_batched_attention(prompts, model, tokenizer, batch_size=10, first_token=True, prune_task="paws_en"):
     """Returns tuple of len(layers) attention maps for each layer 
     each attention map is of shape (total_prompts, num_heads, max_seq_len, max_seq_len)"""
-    path = f"/home/data_shares/mapillary/prompts/{model.config._name_or_path}/{prune_task}_attention_maps.pkl"
+    model_name = os.path.basename(model.config._name_or_path)
+    path = f"/home/data_shares/mapillary/prompts/{model_name}/{prune_task}_attention_maps.pkl"
     if os.path.exists(path):
         with open(path, "rb") as f:
             return pickle.load(f)
