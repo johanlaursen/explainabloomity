@@ -624,3 +624,16 @@ def get_amazon_prune_groups(path="head_importance/0shot_hellaswag.pkl", head_per
         layer_heads = head_mask[layer_number*n_head:(layer_number+1)*n_head]
         n_groups.append(int(layer_heads.sum().item()))
     return n_groups
+
+def get_amazon_prune_heads(path="head_importance/0shot_hellaswag.pkl", head_percent=0.5):
+    head_percent_mask = head_percent * 100
+    head_mask = get_amazon_attention_mask(path, head_percent_mask)
+    layers = 40
+    n_head = 40
+    prune_heads = []
+    for layer_number in range(layers):
+        layer_heads = head_mask[layer_number*n_head:(layer_number+1)*n_head]
+        for i, head in enumerate(layer_heads):
+            if head == 0:
+                prune_heads.append((layer_number, i))
+    return prune_heads
