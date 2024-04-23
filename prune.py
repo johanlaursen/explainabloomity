@@ -143,7 +143,7 @@ def duplicate_prune(model, source_layer, source_head, target_layer, target_head)
         raise ValueError(f"Model {model.config._name_or_path} not supported")
     return model
 
-def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_method, prune_task, prune_percent=0.5, metric='euclidean', group_metric='euclidean', verbose=False):
+def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_method, prune_task, prune_percent=0.5, metric='euclidean', group_metric='euclidean', verbose=False, save=True, worst_case=False):
     '''
     Duplicate prunes a model based on the attention scores of the heads.
     The attention scores are calculated for the prompts and the heads are clustered based on cosine similarity.
@@ -176,7 +176,7 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
             n_groups = get_amazon_prune_groups(head_percent=prune_percent)
         elif prune_method == "imbalanced_correct":
             n_groups = None
-        layers_clustering_dict, attentions, attention_vectors = get_clustering_dict(prompts, model, tokenizer,n_layers=n_layers, n_groups=n_groups, n_heads=n_head, metric=metric, prune_percent=prune_percent)
+        layers_clustering_dict, attentions, attention_vectors = get_clustering_dict(prompts, model, tokenizer,n_layers=n_layers, n_groups=n_groups, n_heads=n_head, metric=metric, prune_percent=prune_percent, prune_task=prune_task)
         for layer_number in tqdm(layers_clustering_dict.keys()):
             if group_metric != 'random':
                 layer_heads = attention_vectors[layer_number*n_head:(layer_number+1)*n_head]
@@ -254,7 +254,8 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
     path_model = f"{model_name}/{prune_method}/{prune_task}/{prune_metric}/{prune_percent}"
     
     model.half()
-    model.save_pretrained(path+path_model+"/model")
+    if save:
+        model.save_pretrained(path+path_model+"/model")
     save_pruning_log(path_model, pruning_log)
     tokenizer.save_pretrained(path+path_model+"/model")
-    return path+path_model
+    return model

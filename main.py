@@ -1,41 +1,77 @@
 from utils import *
 from prune import duplicate_prune_model
+from lm_eval.models import huggingface
+import eval_f
 import eval
 import sys
 import pandas as pd 
 from transformers import AutoModel, AutoTokenizer
 import torch
+from collections import defaultdict
+from pathlib import Path
+import os
 
-def main(model_name, path, metric, group_metric, prune_percent, prune_task, prune_method):
-    prompts = get_prompts_from_file(prune_task)
-    model = AutoModel.from_pretrained(model_name, output_attentions=True)
-    model.eval()
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model_path = duplicate_prune_model(prompts=prompts, 
-                                       path=path,
-                                       model=model,
-                                       model_name=model_name,
-                                       tokenizer=tokenizer,
-                                       prune_percent=prune_percent,
-                                       prune_task=prune_task,
-                                       metric=metric,
-                                       group_metric=group_metric,
-                                       prune_method=prune_method,
-                                       verbose=True)
-    print(model_path)
+def main(model_name, path, metric, group_metric, prune_task, prune_method,):
+    tasks=(
+    # "lambada_openai",
+    # "paws_en",
+    # "hellaswag",
+    # "arc_easy",
+    # "blimp_ellipsis_n_bar_1",
+    "blimp_irregular_plural_subject_verb_agreement_1",
+)
+    prune_percents=(
+        0.1,
+        # 0.2,
+        # 0.3,
+        # 0.4,
+        # 0.5,
+    )
+    for prune_percent in prune_percents:
+        prompts = get_prompts_from_file(prune_task)
+        model = AutoModel.from_pretrained(model_name, output_attentions=True)
+        model.eval()
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = duplicate_prune_model(prompts=prompts, 
+                                        path=path,
+                                        model=model,
+                                        model_name=model_name,
+                                        tokenizer=tokenizer,
+                                        prune_percent=prune_percent,
+                                        prune_task=prune_task,
+                                        metric=metric,
+                                        group_metric=group_metric,
+                                        prune_method=prune_method,
+                                        verbose=True,
+                                        save=False,)
+        print("Pruning done for: ", model_name, prune_method, metric, prune_task, prune_percent)
+        # path_log = Path("pruning_logs") / model / prune_method / prune_task / metric / prune_percent / "pruning_log.txt"
+        prune_method_path = prune_method # + "_mask"
+        metric_path = metric + "_" + group_metric
+        model_path = Path(os.path.basename(model_name)) / prune_method_path / prune_task / metric_path / prune_percent
+        # layers, heads = get_model_layers_and_heads(model.config)
+
+        model_args = {
+                        "pretrained": str(model_name),
+                        "dtype":"float16",
+                        "device": "cuda:0"
+                        }   
+        model_lm = huggingface.HFLM(**model_args)
+        model_lm._model.model = model
+        eval_f.evaluate(model_lm, tasks, model_path)    
+        print("Evaluted: ", model, prune_method, metric_path, prune_task, prune_percent)
 
 if __name__ == "__main__":
-    prune_percent = float(sys.argv[1]) # 0.25 0.5 0.75
-    metric = sys.argv[2] # euclidean cosine random
-    model_name = sys.argv[3] # i.e "bigscience/bloom-560m"
-    path = sys.argv[4] # i.e path/bloom-560m-pruned
-    prompt = sys.argv[5] # i.e pawsx_en
-    group_metric = sys.argv[6] # i.e "cosine if metric is cosine otherwise random"
-    prune_method = sys.argv[7] # i.e balanced or imbalanced
+    # prune_percent = float(sys.argv[1]) # 0.25 0.5 0.75
+    metric = sys.argv[1] # euclidean cosine random
+    model_name = sys.argv[2] # i.e "bigscience/bloom-560m"
+    path = sys.argv[3] # i.e path/bloom-560m-pruned
+    prompt = sys.argv[4] # i.e pawsx_en
+    group_metric = sys.argv[5] # i.e "cosine if metric is cosine otherwise random"
+    prune_method = sys.argv[6] # i.e balanced or imbalanced
     main(model_name=model_name,
             path=path,
             metric=metric,
-            prune_percent=prune_percent,
             prune_task=prompt,
             group_metric=group_metric,
             prune_method=prune_method,
