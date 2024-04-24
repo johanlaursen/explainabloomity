@@ -7,40 +7,26 @@ base_models=(
 )
 prunetasks=(
     # "paws_en"
-    # "hellaswag"
-    "arc_easy"
-    "blimp_ellipsis_n_bar_1"
+    "hellaswag"
+    # "arc_easy"
+    # "blimp_ellipsis_n_bar_1"
 )
 pruning_methods=(
-    "balanced"
+    # "balanced"
     # "imbalanced"
-)
-metrics=(
-    # "cosine_cosine"
-    # "euclidean_euclidean"
-    # "cosine_random"
-    "euclidean_random"
-)
-prune_ratios=(
-    # "0.25"
-    # "0.5"
-    "0.75"
+    # "imbalanced_amazon"
+    "imbalanced_correct"
 )
 
 for model in "${base_models[@]}"
 do
-    for prune_percent in "${prune_ratios[@]}"
+    for prunetask in "${prunetasks[@]}"
     do
-        for prunetask in "${prunetasks[@]}"
+        for prunemethod in "${pruning_methods[@]}"
         do
-            for prunemethod in "${pruning_methods[@]}"
-            do
-                for metric in "${metrics[@]}"
-                do
-                    sbatch --job-name="lmeval_${model}_${prunetask}" lmeval.job $prunetask $prunemethod
-                    # echo "${path}${model}/${prunemethod}/${prunetask}/${metric}/${prune_percent}/model"
-                done
-            done
+            
+            sbatch --job-name="lmeval_${model}_${prunetask}" lmeval.job $prunetask $prunemethod
+            # echo "${path}${model}/${prunemethod}/${prunetask}/${metric}/${prune_percent}/model" 
         done
     done
 done

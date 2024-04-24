@@ -23,21 +23,21 @@ models = ("opt-13b",)
 prune_methods=(
     # "balanced",
     # "imbalanced" ,
-    "random"
+    "random",
 )
 metrics=(
     # "cosine_cosine" ,
     # "euclidean_euclidean" ,
     # "cosine_random",
     # "euclidean_random",
-    "random_random"
+    "random_random",
 )
 prunetasks=(
     # "paws_en",
     # "hellaswag",
     # "arc_easy",
     # "blimp_ellipsis_n_bar_1",
-    "random"
+    "random",
 )
 
 prune_percents=(
@@ -87,6 +87,7 @@ for model in models:
                     model_lm._model.model= prune(model_lm._model.model, pruning_dict)
                     print("Pruning done for: ", model, prune_method, metric, prunetask, prune_percent)
                     for task in tasks:
+                        model_lm._model.to("cuda:0")
                         results = simple_evaluate(
                             model = model_lm,
                             batch_size = "auto",

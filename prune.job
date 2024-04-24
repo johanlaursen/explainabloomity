@@ -13,9 +13,9 @@
 
 #srun hostname
 
-module load Anaconda3
-source activate thesis
-conda env list
+# module load Anaconda3
+# source activate thesis
+# conda env list
 
 # prune_percent metric model_name pathpruned
 echo "prune_percent=$1"

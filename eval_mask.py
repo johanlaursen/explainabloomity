@@ -20,14 +20,14 @@ def _handle_non_serializable(o):
 path = "/home/data_shares/mapillary/thesis_models/pruned_models"
 models = ("opt-13b",)
 prune_methods=(
-    "balanced",
-    # "imbalanced" ,
+    # "balanced",
+    "imbalanced" ,
 )
 metrics=(
-    # "cosine_cosine" ,
-    "euclidean_euclidean" ,
-    "cosine_random",
-    "euclidean_random",
+    "cosine_cosine" ,
+    # "euclidean_euclidean" ,
+    # "cosine_random",
+    # "euclidean_random",
 )
 prunetasks=(
     "paws_en",
@@ -54,35 +54,42 @@ for model in models:
         for metric in metrics:
             for prunetask in prunetasks:
                 for prune_percent in prune_percents:
-                    for task in tasks:
-                        path_log = Path("pruning_logs") / model / prune_method / prunetask / metric / prune_percent / "pruning_log.txt"
-                        prune_method_path = prune_method + "_mask"
-                        model_path = Path(model) / prune_method_path / prunetask / metric / prune_percent
-                        if "opt" in model:
-                            model_name = f"facebook/{model}"
-                        pruning_log = []
-                        pruning_dict = defaultdict(list)
-                        layers, heads = get_model_layers_and_heads(model)
+                    path_log = Path("pruning_logs") / model / prune_method / prunetask / metric / prune_percent / "pruning_log.txt"
+                    prune_method_path = prune_method + "_mask"
+                    model_path = Path(model) / prune_method_path / prunetask / metric / prune_percent
+                    if "opt" in model:
+                        model_name = f"facebook/{model}"
+                    pruning_log = []
+                    pruning_dict = defaultdict(list)
+                    layers, heads = get_model_layers_and_heads(model)
+                    try:
                         with open (path_log, "r") as f:
                             lines = f.readlines()
                             for line in lines:
-                                layer, head_to_keep, head_to_prune = map(int,line.strip().split(","))
+                                if prune_method == "balanced":
+                                    layer, head_to_keep, head_to_prune = map(int,line.strip().split(","))
+                                elif prune_method == "imbalanced":
+                                    layer_keep, head_to_keep, layer, head_to_prune = map(int,line.strip().split(","))
                                 pruning_log.append((layer, head_to_prune))
-                        # mask = torch.ones((layers, heads))
-                        for layer, head in pruning_log:
-                            pruning_dict[layer].append(head)
-                            
-                            # mask[layer, head] = 0
-                            
-                        # model_auto = AutoModel.from_pretrained(model_name)
-                        model_args = {
-                        "pretrained": str(model_name),
-                        "dtype":"float16",
-                        # "head_mask": mask,
-                        "device": "cuda:0"
-                        }
-                        model_lm = huggingface.HFLM(**model_args)
-                        model_lm._model.model= prune(model_lm._model.model, pruning_dict)
+                    except:
+                        print("No pruning log found for: ", model, prune_method, metric, prunetask, prune_percent)
+                    # mask = torch.ones((layers, heads))
+                    for layer, head in pruning_log:
+                        pruning_dict[layer].append(head)
+                        
+                        # mask[layer, head] = 0
+                        
+                    # model_auto = AutoModel.from_pretrained(model_name)
+                    model_args = {
+                    "pretrained": str(model_name),
+                    "dtype":"float16",
+                    # "head_mask": mask,
+                    "device": "cuda:0"
+                    }
+                    model_lm = huggingface.HFLM(**model_args)
+                    model_lm._model.model= prune(model_lm._model.model, pruning_dict)
+                    for task in tasks:
+                        model_lm._model.to("cuda:0")
                         print("Pruning done for: ", model, prune_method, metric, prunetask, prune_percent, task)
                         results = simple_evaluate(
                             model = model_lm,

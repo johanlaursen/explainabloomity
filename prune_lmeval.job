@@ -8,7 +8,7 @@
 #SBATCH --mem=100G
 #SBATCH --constraint="gpu_rtx8000|gpu_a100_40gb|gpu_v100" # Use either a v100 or a100
 #SBATCH --gres=gpu:1      #v100:1 or a100_40gb:1 on brown
-#SBATCH --time=0-12:15:00          # Run time (hh:mm:ss) 
+#SBATCH --time=0-0:15:00          # Run time (hh:mm:ss) 
 #SBATCH --partition=red,brown    # Run on either the red or brown queue
 
 #srun hostname

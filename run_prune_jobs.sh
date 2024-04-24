@@ -14,22 +14,24 @@ path="/home/data_shares/mapillary/thesis_models/pruned_models/"
 # prunetype="unbalanced_prune" # unbalanced_prune or pruned
 prune_methods=(
     # "balanced"
-    "imbalanced"
+    # "imbalanced"
+    # "imbalanced_amazon"
+    "imbalanced_correct"
 )
 metrics=(
     "cosine"
-    "euclidean"
+    # "euclidean"
 )
 prunetasks=(
-    "paws_en"
+    # "paws_en"
     "hellaswag"
     # "arc_easy"
-    "blimp_ellipsis_n_bar_1"
+    # "blimp_ellipsis_n_bar_1"
 )
 prune_percents=(
     "0.25"
-    "0.5"
-    "0.75"
+    # "0.5"
+    # "0.75"
 )
 
 for metric in "${metrics[@]}"
@@ -41,7 +43,7 @@ do
             for prunemethod in "${prune_methods[@]}"
             do
                 sbatch --job-name="${prunemethod}_${model_basename}_${metric}_${prune_percent}_${prompt}" prune.job $prune_percent $metric $model_name $path $prunetask $metric $prunemethod
-                sbatch --job-name="${prunemethod}_${model_basename}_${metric}_${prune_percent}_${prompt}" prune.job $prune_percent $metric $model_name $path $prunetask "random" $prunemethod
+                # sbatch --job-name="${prunemethod}_${model_basename}_${metric}_${prune_percent}_${prompt}" prune.job $prune_percent $metric $model_name $path $prunetask "random" $prunemethod
             done
         done
         # Note if it is balanced or unbalanced

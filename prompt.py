@@ -3,13 +3,13 @@ from transformers import AutoModel, AutoTokenizer
 import torch
 import sys
 import pickle
+import os
 
 prune_tasks = (
-    "paws_en",
-    "hellaswag",
+    # "paws_en",
+    # "hellaswag",
+    # "blimp_ellipsis_n_bar_1",
     "arc_easy",
-    "blimp_ellipsis_n_bar_1",
-    "blimp_irregular_plural_subject_verb_agreement_1"
 )
 path = "/home/data_shares/mapillary/prompts/opt-13b"
 model_name="facebook/opt-13b"
@@ -20,5 +20,7 @@ for task in prune_tasks:
     
     prompts = get_prompts_from_file(task)
     attention_maps = get_batched_attention(prompts, model, tokenizer, first_token=True)
-    with open(f"{path}/{task}_attention_maps.pkl", "wb") as f:
+    file_path = f"{path}/{task}_attention_maps.pkl"
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, "wb") as f:
         pickle.dump(attention_maps, f)
