@@ -10,6 +10,7 @@
 #SBATCH --gres=gpu:1      #v100:1 or a100_40gb:1 on brown
 #SBATCH --time=0-12:15:00          # Run time (hh:mm:ss) 
 #SBATCH --partition=red,brown    # Run on either the red or brown queue
+#SBATCH --dependency=afterok:176233:176234:176235
 
 #srun hostname
 
@@ -37,9 +38,9 @@ output_path=""
 
 metrics=(
     "cosine_cosine"
-    "euclidean_euclidean"
-    "cosine_random"
-    "euclidean_random"
+    # "euclidean_euclidean"
+    # "cosine_random"
+    # "euclidean_random"
 )
 prune_ratios=(
     "0.25"
