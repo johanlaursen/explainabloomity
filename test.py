@@ -25,11 +25,43 @@ from prune import duplicate_prune_model
 from utils import *
 import pickle
 
+head_percent = 0.5
+path = "head_importance/0shot_hellaswag.pkl"
+head_percent_mask = head_percent * 100
+head_mask = get_amazon_attention_mask(path, head_percent_mask)
+layers = 40
+n_head = 40
+prune_heads = []
+for layer_number in range(layers):
+    layer_heads = head_mask[layer_number*n_head:(layer_number+1)*n_head]
+    for i, head in enumerate(layer_heads):
+        if head == 0:
+            prune_heads.append((layer_number, i))
+len(prune_heads)
+
+chosen_clusters = set()
+head_indices = get_top_heads(top_n = 800)
+for head in head_indices:
+    for i, cluster in enumerate(clusters):
+        if head in cluster:
+            chosen_clusters.add(tuple(cluster))
+len(set(chosen_clusters))/len(chosen_clusters)
+chosen_clusters
+# sort counter by key
+sorted(Counter([layer for layer, head in head_indices]).items())
+import random
+tuple_list = []
+for i in range(40):
+    for j in range(40):
+        tuple_list.append((i, j))
+random_heads = random.choices(tuple_list, k=800)
+
 #model_name = "bigscience/bloom-560m"
 model_name = "facebook/opt-13b"
 model = AutoModel.from_pretrained(model_name, output_attentions=True)#.to(device)  # Configure model to return attention values
 tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
-prompt = "A man is riding on a horse. he runs after a calf and ties its legs."
+#prompt = "A man is riding on a horse. he runs after a calf and ties its legs."
+prompt = "Write once, run anywhere, right? Yes, Write anywhere, once run"
 
 def get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True):
     inputs = tokenizer.encode(prompt, return_tensors='pt')#.to(device)
@@ -46,11 +78,25 @@ att, tok = get_attention(prompt)
 with open('attention.pkl', 'wb') as f:
     pickle.dump(att, f)
 
+def visualize_single(att_map, sentence):
+    """
+    Attention map for a given layer and head
+    """
+    
+    plt.figure(figsize=(16, 12))
+    plt.imshow(att_map, cmap='Reds')
+    plt.xticks(range(len(sentence)), sentence, rotation=60, fontsize=12)
+    plt.yticks(range(len(sentence)), sentence, fontsize=12)
+
+    plt.grid(False)
+
 inputs = tokenizer.encode(prompt, return_tensors='pt')
 tok= tokenizer.convert_ids_to_tokens(inputs[0])
-att = pickle.load(open('attention.pkl', 'rb'))
+att = pickle.load(open('attention_write_once.pkl', 'rb'))
 model_view(att, tok)  # Display model view
 #head_view(att, tok, layer=15, heads=[1])
+
+visualize_single(att[0][0, 21, :, :], tok)
 
 clustering = pickle.load(open('clustering.pkl', 'rb'))
 clustering
@@ -109,17 +155,8 @@ def get_training_data(dataset_name="paws-x", n_samples=100, save_to_file=False, 
 
 test = get_training_data()
 
-def visualize_single(att_map, sentence):
-    """
-    Attention map for a given layer and head
-    """
-    
-    plt.figure(figsize=(16, 12))
-    plt.imshow(att_map[0], cmap='Reds')
-    plt.xticks(range(len(sentence)), sentence, rotation=60, fontsize=12)
-    plt.yticks(range(len(sentence)), sentence, fontsize=12)
 
-    plt.grid(False)
+
 
 
 def visualize_some(attention, tokens, head_list, random_sample=0, cols=4):
