@@ -1,0 +1,40 @@
+{
+  "results": {
+    "lambada": {
+      "ppl": 7.257687414077549,
+      "acc": 0.5682126916359402
+    },
+    "blimp_ellipsis_n_bar_1": {
+      "acc": 0.857
+    },
+    "hellaswag": {
+      "acc": 0.5215096594303924,
+      "acc_norm": 0.7012547301334395
+    },
+    "arc_easy": {
+      "acc": 0.6515151515151515,
+      "acc_norm": 0.6026936026936027
+    },
+    "blimp_irregular_plural_subject_verb_agreement_1": {
+      "acc": 0.922
+    }
+  },
+  "versions": {
+    "lambada": 0,
+    "blimp_ellipsis_n_bar_1": 0,
+    "hellaswag": 0,
+    "arc_easy": 0,
+    "blimp_irregular_plural_subject_verb_agreement_1": 0
+  },
+  "config": {
+    "model": "opt",
+    "model_args": "pretrained=facebook/opt-13b,model_cache_dir=/dtu/p1/alaisp/llm-interpret/lm-evaluation-harness/opt13b_checkpoints,tokenizer_cache_dir=/dtu/p1/alaisp/llm-interpret/lm-evaluation-harness/opt13b_tokenizer,mask_heads=1,head_importance_path=/dtu/p1/alaisp/llm-interpret/lm-evaluation-harness/../logs/head_importance/opt13b/0shot_hellaswag.pkl,head_percent_mask=40",
+    "num_fewshot": 0,
+    "batch_size": 8,
+    "device": "cuda",
+    "no_cache": false,
+    "limit": null,
+    "bootstrap_iters": 100000,
+    "description_dict": {}
+  }
+}
