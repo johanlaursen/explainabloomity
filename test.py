@@ -39,8 +39,21 @@ for layer_number in range(layers):
             prune_heads.append((layer_number, i))
 len(prune_heads)
 
+def load_clusters_from_log(path):
+    # Read the file, which contains newline separated 
+    clusters = defaultdict(list)
+    with open(path, 'r') as file:
+        for line in file.readlines():
+            layer, head_to_keep, head_to_prune = map(int,line.strip().split(','))
+            clusters[(layer, head_to_keep)].append((layer, head_to_prune))
+    for head in clusters.keys():
+        clusters[head].append(head)
+    return clusters
+
+clusters = load_clusters_from_log('pruning_logs/opt-13b/imbalanced_correct/hellaswag/cosine_cosine/0.5')
+
+
 chosen_clusters = set()
-head_indices = get_top_heads(top_n = 800)
 for head in head_indices:
     for i, cluster in enumerate(clusters):
         if head in cluster:
@@ -96,10 +109,26 @@ att = pickle.load(open('attention_write_once.pkl', 'rb'))
 model_view(att, tok)  # Display model view
 #head_view(att, tok, layer=15, heads=[1])
 
-visualize_single(att[0][0, 21, :, :], tok)
+visualize_single(att[12][0, 14, :, :], tok)
 
 clustering = pickle.load(open('clustering.pkl', 'rb'))
 clustering
+dic = {8: 2,
+     	23: 2,
+     	37: 2,
+     	12: 1,
+     	24: 1,
+     	9: 1,
+     	26: 1,
+     	22: 1,
+     	28: 1,
+     	36: 1,
+     	10: 1}
+# Create histogram of dic with x ticks  at the keys of dic and at 45 degrees
+plt.bar(dic.keys(), dic.values())
+plt.xticks(list(dic.keys()), rotation=45)
+plt.show()
+
 
 #visualize_all(attention, n_layers=24, n_heads=16, figname='test.png')
 #attention_weights = attention[20][:, 12, :, :] # Get the first layer [0], and the first attention head's attention
