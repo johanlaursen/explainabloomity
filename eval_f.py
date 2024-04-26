@@ -17,6 +17,7 @@ def _handle_non_serializable(o):
 
 def evaluate(model_lm, tasks, model_path, ):
     for task in tasks:
+        print("Evaluating: ", task, model_path)
         model_lm._model.to("cuda:0")
         results = simple_evaluate(
             model = model_lm,
@@ -24,6 +25,7 @@ def evaluate(model_lm, tasks, model_path, ):
             device = "cuda:0",
             num_fewshot = 0,
             tasks=[task],
+            log_samples=False,
         )
         model_lm._model.to('cpu')
         torch.cuda.empty_cache()
