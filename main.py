@@ -10,25 +10,26 @@ import torch
 from collections import defaultdict
 from pathlib import Path
 import os
+import gc
 
 def main(model_name, path, metric, group_metric, prune_task, prune_method,):
     tasks=(
     # "lambada_openai",
     # "paws_en",
-    # "hellaswag",
+    "hellaswag",
     # "arc_easy",
     # "blimp_ellipsis_n_bar_1",
-    "blimp_irregular_plural_subject_verb_agreement_1",
+    # "blimp_irregular_plural_subject_verb_agreement_1",
 )
     prune_percents=(
         0.1,
-        # 0.2,
-        # 0.3,
-        # 0.4,
-        # 0.5,
+        0.2,
+        0.3,
+        0.4,
+        0.5,
     )
+    prompts = get_prompts_from_file(prune_task)
     for prune_percent in prune_percents:
-        prompts = get_prompts_from_file(prune_task)
         model = AutoModel.from_pretrained(model_name, output_attentions=True)
         model.eval()
         tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -48,7 +49,7 @@ def main(model_name, path, metric, group_metric, prune_task, prune_method,):
         # path_log = Path("pruning_logs") / model / prune_method / prune_task / metric / prune_percent / "pruning_log.txt"
         prune_method_path = prune_method # + "_mask"
         metric_path = metric + "_" + group_metric
-        model_path = Path(os.path.basename(model_name)) / prune_method_path / prune_task / metric_path / prune_percent
+        model_path = Path(os.path.basename(model_name)) / prune_method_path / prune_task / metric_path / str(prune_percent)
         # layers, heads = get_model_layers_and_heads(model.config)
 
         model_args = {
@@ -59,7 +60,13 @@ def main(model_name, path, metric, group_metric, prune_task, prune_method,):
         model_lm = huggingface.HFLM(**model_args)
         model_lm._model.model = model
         eval_f.evaluate(model_lm, tasks, model_path)    
-        print("Evaluted: ", model, prune_method, metric_path, prune_task, prune_percent)
+        print("Evaluted: ", model_name, prune_method, metric_path, prune_task, prune_percent)
+        ## Make sure models aren't hanging around when no longer needed
+        del model_lm
+        model.to('cpu')
+        del model
+        gc.collect()
+
 
 if __name__ == "__main__":
     # prune_percent = float(sys.argv[1]) # 0.25 0.5 0.75
