@@ -254,7 +254,7 @@ def get_group_dict(clusters, n_layers=24, n_heads=16):
                 group_dict[clusters[i*n_heads + j]].append((i, j))
     return group_dict
 
-def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', n_layers=24, n_heads=16, by_layer=True, prune_percent=0.5, prune_task="paws_en"):
+def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', n_layers=24, n_heads=16, by_layer=True, prune_percent=0.5, prune_task="paws_en", prompt_analysis=False, attention_maps=None):
     """
     n_groups is a int if pruning same number of heads from each layer, a list of ints if pruning is variable and None if determining ourself
     Returns a dictionary with layer number as key and list of attention heads as value when by_layer = True
@@ -262,7 +262,8 @@ def get_clustering_dict(prompts, model, tokenizer, n_groups=8, metric='cosine', 
     Otherwise returns a dictionary with group number as key and list of (layer, head) tuples as value
     """
 
-    attention_maps = get_batched_attention(prompts, model, tokenizer, first_token=True, prune_task=prune_task)
+    if not prompt_analysis:
+        attention_maps = get_batched_attention(prompts, model, tokenizer, first_token=True, prune_task=prune_task)
     attention_vectors = attention_vector_multiple_inputs(attention_maps)
 
     if n_groups is None:
@@ -378,6 +379,9 @@ def get_model_layers_and_heads(config):
             layers = 40
             heads = 40
             return layers, heads
+        elif config == "bloom-7b1":
+            layers = 30
+            heads = 32
         else:
             raise ValueError("Model not supported")
     if "bloom" in config._name_or_path:

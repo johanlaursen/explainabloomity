@@ -18,10 +18,13 @@ def _handle_non_serializable(o):
 
 
 path = "/home/data_shares/mapillary/thesis_models/pruned_models"
-models = ("opt-13b",)
+models = (
+    # "opt-13b",
+    "bloom-7b1",
+    )
 prune_methods=(
     # "balanced",
-    "imbalanced" ,
+    "imbalanced_correct" ,
 )
 metrics=(
     "cosine_cosine" ,
@@ -30,24 +33,29 @@ metrics=(
     # "euclidean_random",
 )
 prunetasks=(
-    "paws_en",
+    # "paws_en",
     "hellaswag",
-    "arc_easy",
-    "blimp_ellipsis_n_bar_1",
+    # "arc_easy",
+    # "blimp_ellipsis_n_bar_1",
 )
 
 prune_percents=(
-    "0.25",
+    # "0.25",
+    # "0.5",
+    # "0.75",
+    "0.1",
+    "0.2",
+    "0.3",
+    "0.4",
     "0.5",
-    "0.75",
 )
 tasks=(
-    "lambada_openai",
-    "paws_en",
+    # "lambada_openai",
+    # "paws_en",
     "hellaswag",
     "arc_easy",
-    "blimp_ellipsis_n_bar_1",
-    "blimp_irregular_plural_subject_verb_agreement_1"
+    # "blimp_ellipsis_n_bar_1",
+    # "blimp_irregular_plural_subject_verb_agreement_1"
 )
 for model in models:
     for prune_method in prune_methods:
@@ -59,6 +67,8 @@ for model in models:
                     model_path = Path(model) / prune_method_path / prunetask / metric / prune_percent
                     if "opt" in model:
                         model_name = f"facebook/{model}"
+                    elif "bloom" in model:
+                        model_name = f"bigscience/{model}"
                     pruning_log = []
                     pruning_dict = defaultdict(list)
                     layers, heads = get_model_layers_and_heads(model)
@@ -66,10 +76,10 @@ for model in models:
                         with open (path_log, "r") as f:
                             lines = f.readlines()
                             for line in lines:
-                                if prune_method == "balanced":
-                                    layer, head_to_keep, head_to_prune = map(int,line.strip().split(","))
-                                elif prune_method == "imbalanced":
+                                if prune_method == "imbalanced":
                                     layer_keep, head_to_keep, layer, head_to_prune = map(int,line.strip().split(","))
+                                else:
+                                    layer, head_to_keep, head_to_prune = map(int,line.strip().split(","))
                                 pruning_log.append((layer, head_to_prune))
                     except:
                         print("No pruning log found for: ", model, prune_method, metric, prunetask, prune_percent)
@@ -97,6 +107,7 @@ for model in models:
                             device = "cuda:0",
                             num_fewshot = 0,
                             tasks=[task],
+                            log_samples=False,
                         )
                         model_lm._model.to('cpu')
                         torch.cuda.empty_cache()
