@@ -37,10 +37,8 @@ for layer_number in range(layers):
     for i, head in enumerate(layer_heads):
         if head == 0:
             prune_heads.append((layer_number, i))
-len(prune_heads)
 
 def load_clusters_from_log(path):
-    # Read the file, which contains newline separated 
     clusters = defaultdict(list)
     with open(path, 'r') as file:
         for line in file.readlines():
@@ -50,11 +48,61 @@ def load_clusters_from_log(path):
         clusters[head].append(head)
     return clusters
 
-clusters = load_clusters_from_log('pruning_logs/opt-13b/imbalanced_correct/hellaswag/cosine_cosine/0.5')
+clusters = load_clusters_from_log('pruning_logs/opt-13b/imbalanced_amazon/hellaswag/cosine_cosine/0.5/pruning_log.txt')
 
+cluster_sizes = Counter([len(cluster) for cluster in clusters.values()])
+cluster_sizes
+dic = {8: 2,
+     	23: 2,
+     	37: 2,
+     	12: 1,
+     	24: 1,
+     	9: 1,
+     	26: 1,
+     	22: 1,
+     	28: 1,
+     	36: 1,
+     	10: 1}
+all_keys = sorted(set(cluster_sizes.keys()).union(set(dic.keys())))
 
+# Map each key to an index
+key_to_index = {key: index for index, key in enumerate(all_keys)}
+
+# Prepare the data for plotting
+x = list(key_to_index.values())  # Positions for the bars
+labels = list(key_to_index.keys())  # Labels for the x-axis
+y1 = [cluster_sizes.get(key, 0) for key in labels]  # Values for the first histogram
+y2 = [dic.get(key, 0) for key in labels]  # Values for the second histogram
+
+# Plotting both histograms side by side
+plt.bar([xi - 0.2 for xi in x], y1, width=0.4, label='All pruned clusters', color='blue')
+plt.bar([xi + 0.2 for xi in x], y2, width=0.4, label='Clusters of 100 most important heads', color='green')
+plt.ylabel('Frequency')
+plt.xlabel('Cluster size')
+# Adding labels and legends
+plt.title('Cluster size distribution of similar heads')
+plt.xticks(x, labels, rotation=45)
+plt.legend()
+
+# Show the plot
+plt.show()
+
+plt.bar(cluster_sizes.keys(), cluster_sizes.values())
+plt.xticks(list(cluster_sizes.keys()), rotation=45)
+plt.show()
+
+plt.bar(dic.keys(), dic.values())
+plt.xticks(list(dic.keys()), rotation=45)
+plt.show()
+
+import random
+tuple_list = []
+for i in range(40):
+    for j in range(40):
+        tuple_list.append((i, j))
+random_heads = random.choices(tuple_list, k=800)
 chosen_clusters = set()
-for head in head_indices:
+for head in random_heads:
     for i, cluster in enumerate(clusters):
         if head in cluster:
             chosen_clusters.add(tuple(cluster))
@@ -62,20 +110,16 @@ len(set(chosen_clusters))/len(chosen_clusters)
 chosen_clusters
 # sort counter by key
 sorted(Counter([layer for layer, head in head_indices]).items())
-import random
-tuple_list = []
-for i in range(40):
-    for j in range(40):
-        tuple_list.append((i, j))
-random_heads = random.choices(tuple_list, k=800)
 
-#model_name = "bigscience/bloom-560m"
-model_name = "facebook/opt-13b"
+
+model_name = "bigscience/bloom-560m"
+#model_name = "facebook/opt-13b"
 model = AutoModel.from_pretrained(model_name, output_attentions=True)#.to(device)  # Configure model to return attention values
 tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
 #prompt = "A man is riding on a horse. he runs after a calf and ties its legs."
-prompt = "Write once, run anywhere, right? Yes, Write anywhere, once run"
-
+#prompt = "Write once, run anywhere, right? Yes, Write anywhere, once run"
+#prompt = "Spectrobes is a science fiction video game that was developed by Kyoto-based game developer Jupiter Corporation."
+#prompt = "Another method uses stochastic gradient descent (SGD)"
 def get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True):
     inputs = tokenizer.encode(prompt, return_tensors='pt')#.to(device)
     tokens = tokenizer.convert_ids_to_tokens(inputs[0])
@@ -86,7 +130,15 @@ def get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True):
         attention = delete_first_token(attention)    
     return attention, tokens
 
+#prompt = "In the United States, a special weapons and tactics team (SWAT) is a generic term for a police tactical unit."
+#prompt = "The North Atlantic Treaty Organization (NATO) is an intergovernmental military alliance of 32 member states"
+#prompt = "Write once, run anywhere, right? Yes, Write anywhere, once run"
+prompt = "Do you have the time? No. Mary has the time! I think"
 att, tok = get_attention(prompt)
+inputs = tokenizer.encode(prompt, return_tensors='pt')
+tok= tokenizer.convert_ids_to_tokens(inputs[0])
+model_view(att, tok)
+
 #pickle attention
 with open('attention.pkl', 'wb') as f:
     pickle.dump(att, f)
@@ -105,7 +157,7 @@ def visualize_single(att_map, sentence):
 
 inputs = tokenizer.encode(prompt, return_tensors='pt')
 tok= tokenizer.convert_ids_to_tokens(inputs[0])
-att = pickle.load(open('attention_write_once.pkl', 'rb'))
+#att = pickle.load(open('attention_write_once.pkl', 'rb'))
 model_view(att, tok)  # Display model view
 #head_view(att, tok, layer=15, heads=[1])
 
@@ -113,21 +165,6 @@ visualize_single(att[12][0, 14, :, :], tok)
 
 clustering = pickle.load(open('clustering.pkl', 'rb'))
 clustering
-dic = {8: 2,
-     	23: 2,
-     	37: 2,
-     	12: 1,
-     	24: 1,
-     	9: 1,
-     	26: 1,
-     	22: 1,
-     	28: 1,
-     	36: 1,
-     	10: 1}
-# Create histogram of dic with x ticks  at the keys of dic and at 45 degrees
-plt.bar(dic.keys(), dic.values())
-plt.xticks(list(dic.keys()), rotation=45)
-plt.show()
 
 
 #visualize_all(attention, n_layers=24, n_heads=16, figname='test.png')
