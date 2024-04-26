@@ -641,3 +641,13 @@ def get_amazon_prune_heads(path="head_importance/0shot_hellaswag.pkl", head_perc
             if head == 0:
                 prune_heads.append((layer_number, i))
     return prune_heads
+
+def load_clusters_from_log(path):
+    clusters = defaultdict(list)
+    with open(path, 'r') as file:
+        for line in file.readlines():
+            layer, head_to_keep, head_to_prune = map(int,line.strip().split(','))
+            clusters[(layer, head_to_keep)].append((layer, head_to_prune))
+    for head in clusters.keys():
+        clusters[head].append(head)
+    return clusters
