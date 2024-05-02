@@ -1,6 +1,7 @@
 import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 import pandas as pd
 from transformers import AutoTokenizer, AutoModel, utils
 import torch
@@ -24,6 +25,44 @@ from collections import defaultdict, Counter
 from prune import duplicate_prune_model
 from utils import *
 import pickle
+
+head_importance = pickle.load(open('head_importance/0shot_hellaswag.pkl', 'rb'))
+head_values, head_indices = torch.sort(head_importance.view(-1))
+x = np.array(head_importance.view(-1))
+cutoff = np.percentile(x, 93.75)
+ax = sns.histplot(x, kde=True, color='tab:blue', binrange=(np.min(x), np.max(x)))
+legend_patches = [
+    Patch(color='tab:blue', label='below cutoff'),
+    Patch(color='red', label='100 most important heads')
+]
+
+for patch in ax.patches:
+    # Get the x-coordinate of the bin and its width
+    bin_x = patch.get_x()
+    bin_width = patch.get_width()
+    
+    # If the bin includes values greater than the cutoff, color it red
+    if bin_x + bin_width >= cutoff:
+        patch.set_facecolor('red')
+
+plt.xlabel('Head importance value')
+plt.ylabel('Frequency')
+plt.title('Histogram of head importance values')
+plt.legend(handles=legend_patches)
+plt.show()
+############################################
+plt.scatter(range(1600), x, alpha=0.5, s=5)
+med = np.median(x)
+plt.axhline(med, color='red', linestyle='--', label='Median importance value')
+for i in range(0, 1600, 40):
+    plt.axvline(x=i, color='gray', linestyle='--', alpha=0.5, label='Layer boundary' if i == 0 else "")
+plt.xlabel('Head Index')
+plt.ylabel('Importance Value')
+plt.title('Scatter Plot of Head Importance Values')
+plt.legend()
+plt.show()
+
+
 
 head_percent = 0.5
 path = "head_importance/0shot_hellaswag.pkl"
@@ -79,6 +118,7 @@ plt.bar([xi - 0.2 for xi in x], y1, width=0.4, label='All pruned clusters', colo
 plt.bar([xi + 0.2 for xi in x], y2, width=0.4, label='Clusters of 100 most important heads', color='green')
 plt.ylabel('Frequency')
 plt.xlabel('Cluster size')
+plt.yscale('log')  # Set the y-axis to a logarithmic scale
 # Adding labels and legends
 plt.title('Cluster size distribution of similar heads')
 plt.xticks(x, labels, rotation=45)
@@ -86,6 +126,66 @@ plt.legend()
 
 # Show the plot
 plt.show()
+
+data = []
+for key in all_keys:
+    data.append({'Cluster Size': key, 'Frequency': cluster_sizes.get(key, 0), 'Type': 'All pruned clusters'})
+    data.append({'Cluster Size': key, 'Frequency': dic.get(key, 0), 'Type': 'Clusters of 100 most important heads'})
+
+# Convert to DataFrame
+df = pd.DataFrame(data)
+
+# Plotting using seaborn
+plt.figure(figsize=(12, 6))
+sns.barplot(data=df, x='Cluster Size', y='Frequency', hue='Type', palette=['blue', 'orange'], width=1)
+plt.yscale('log')  # Set the y-axis to logarithmic scale
+plt.ylabel('Frequency')
+plt.xlabel('Cluster Size')
+plt.title('Cluster size distribution of similar heads')
+plt.xticks(rotation=45)
+plt.legend(title='Cluster Type')
+
+# Show the plot
+plt.show()
+
+
+
+
+
+
+cluster_sizes_values = [len(cluster) for cluster in clusters.values()]
+dic_values = [key for key, count in dic.items() for _ in range(count)]
+
+# Set up the figure and axis
+plt.figure(figsize=(12, 6))
+
+# Plot stacked histograms
+plt.hist([cluster_sizes_values, dic_values], bins=10, label=['All pruned clusters', 'Clusters of 100 most important heads'], color=['blue', 'green'], stacked=True)
+
+# Adding labels, title, and legend
+plt.ylabel('Frequency')
+plt.xlabel('Cluster size')
+plt.title('Cluster size distribution of similar heads')
+plt.legend()
+
+# Show the plot
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 plt.bar(cluster_sizes.keys(), cluster_sizes.values())
 plt.xticks(list(cluster_sizes.keys()), rotation=45)
