@@ -19,8 +19,8 @@ def _handle_non_serializable(o):
 
 path = "/home/data_shares/mapillary/thesis_models/pruned_models"
 models = (
-    # "opt-13b",
-    "bloom-7b1",
+    "opt-13b",
+    # "bloom-7b1",
     )
 prune_methods=(
     # "balanced",
@@ -97,7 +97,10 @@ for model in models:
                     "device": "cuda:0"
                     }
                     model_lm = huggingface.HFLM(**model_args)
-                    model_lm._model.model= prune(model_lm._model.model, pruning_dict)
+                    if model == "opt-13b":
+                        model_lm._model.model= prune(model_lm._model.model, pruning_dict)
+                    else:
+                        model_lm._model.transformer= prune(model_lm._model.transformer, pruning_dict)
                     for task in tasks:
                         model_lm._model.to("cuda:0")
                         print("Pruning done for: ", model, prune_method, metric, prunetask, prune_percent, task)

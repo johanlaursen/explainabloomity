@@ -45,8 +45,8 @@ def duplicate_prune_opt(model, source_layer, source_head, target_layer, target_h
     t_v_b = target_opt_block.self_attn.v_proj.bias.view(n_head, hidden_size//n_head)
     t_q = target_opt_block.self_attn.q_proj.weight.view(n_head, hidden_size//n_head, hidden_size)
     t_q_b = target_opt_block.self_attn.q_proj.bias.view(n_head, hidden_size//n_head)
-    t_out = target_opt_block.self_attn.out_proj.weight.view(n_head, hidden_size//n_head, hidden_size)
-    t_out_b = target_opt_block.self_attn.out_proj.bias.view(n_head, hidden_size//n_head)
+    # t_out = target_opt_block.self_attn.out_proj.weight.view(n_head, hidden_size//n_head, hidden_size)
+    # t_out_b = target_opt_block.self_attn.out_proj.bias.view(n_head, hidden_size//n_head)
 
     with torch.no_grad():
         t_k[target_head] =  k
@@ -55,8 +55,8 @@ def duplicate_prune_opt(model, source_layer, source_head, target_layer, target_h
         t_v_b[target_head] = v_b 
         t_q[target_head] =  q
         t_q_b[target_head] = q_b 
-        t_out[target_head] =  out
-        t_out_b[target_head] =  out_b
+        # t_out[target_head] =  out
+        # t_out_b[target_head] =  out_b
 
     model.decoder.layers[target_layer].self_attn.k_proj.weight = torch.nn.Parameter(t_k.view_as(target_opt_block.self_attn.k_proj.weight))
     model.decoder.layers[target_layer].self_attn.k_proj.bias = torch.nn.Parameter(t_k_b.view_as(target_opt_block.self_attn.k_proj.bias))
@@ -64,8 +64,8 @@ def duplicate_prune_opt(model, source_layer, source_head, target_layer, target_h
     model.decoder.layers[target_layer].self_attn.v_proj.bias = torch.nn.Parameter(t_v_b.view_as(target_opt_block.self_attn.v_proj.bias))
     model.decoder.layers[target_layer].self_attn.q_proj.weight = torch.nn.Parameter(t_q.view_as(target_opt_block.self_attn.q_proj.weight))
     model.decoder.layers[target_layer].self_attn.q_proj.bias = torch.nn.Parameter(t_q_b.view_as(target_opt_block.self_attn.q_proj.bias))
-    model.decoder.layers[target_layer].self_attn.out_proj.weight = torch.nn.Parameter(t_out.view_as(target_opt_block.self_attn.out_proj.weight))
-    model.decoder.layers[target_layer].self_attn.out_proj.bias = torch.nn.Parameter(t_out_b.view_as(target_opt_block.self_attn.out_proj.bias))
+    # model.decoder.layers[target_layer].self_attn.out_proj.weight = torch.nn.Parameter(t_out.view_as(target_opt_block.self_attn.out_proj.weight))
+    # model.decoder.layers[target_layer].self_attn.out_proj.bias = torch.nn.Parameter(t_out_b.view_as(target_opt_block.self_attn.out_proj.bias))
     return model
 
 def prune_opt(model, layer, head):

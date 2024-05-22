@@ -382,6 +382,7 @@ def get_model_layers_and_heads(config):
         elif config == "bloom-7b1":
             layers = 30
             heads = 32
+            return layers, heads
         else:
             raise ValueError("Model not supported")
     if "bloom" in config._name_or_path:

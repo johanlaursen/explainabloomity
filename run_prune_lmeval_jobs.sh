@@ -2,16 +2,16 @@
 
 
 # model_name="bigscience/bloom-7b1"
-model_name="bigscience/bloom-7b1"
+# model_name="bigscience/bloom-7b1"
 # model_name="facebook/opt-6.7b"
-# model_name="facebook/opt-13b"
+model_name="facebook/opt-13b"
 
 model_basename="${model_name##*/}"
 # path="/home/data_shares/mapillary/thesis_models/pruned_models/"
 
 
 prune_methods=(
-    # "balanced"
+    "balanced"
     # "imbalanced"
     # "imbalanced_amazon"
     "imbalanced_correct"
@@ -21,10 +21,10 @@ metrics=(
     # "euclidean"
 )
 prunetasks=(
-    # "paws_en"
+    "paws_en"
     "hellaswag"
-    # "blimp_ellipsis_n_bar_1"
-    # "arc_easy"
+    "blimp_ellipsis_n_bar_1"
+    "arc_easy"
 )
 
 for metric in "${metrics[@]}"

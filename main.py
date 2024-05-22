@@ -1,5 +1,5 @@
 from utils import *
-from prune import duplicate_prune_model
+from prune import duplicate_prune_model, prune
 from lm_eval.models import huggingface
 import eval_f
 import eval
@@ -24,15 +24,18 @@ def main(model_name, path, metric, group_metric, prune_task, prune_method,):
     prune_percents=(
         0.1,
         0.2,
+        0.25,
         0.3,
         0.4,
         0.5,
+        0.75,
     )
     prompts = get_prompts_from_file(prune_task)
     for prune_percent in prune_percents:
         model = AutoModel.from_pretrained(model_name, output_attentions=True)
         model.eval()
         tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model_basename = os.path.basename(model_name)
         model = duplicate_prune_model(prompts=prompts, 
                                         path=path,
                                         model=model,
@@ -49,7 +52,7 @@ def main(model_name, path, metric, group_metric, prune_task, prune_method,):
         # path_log = Path("pruning_logs") / model / prune_method / prune_task / metric / prune_percent / "pruning_log.txt"
         prune_method_path = prune_method # + "_mask"
         metric_path = metric + "_" + group_metric
-        model_path = Path(os.path.basename(model_name)) / prune_method_path / prune_task / metric_path / str(prune_percent)
+        model_path = Path(model_basename) / prune_method_path / prune_task / metric_path / str(prune_percent)
         # layers, heads = get_model_layers_and_heads(model.config)
 
         model_args = {
@@ -66,7 +69,47 @@ def main(model_name, path, metric, group_metric, prune_task, prune_method,):
         model.to('cpu')
         del model
         gc.collect()
+        
+        
+        ### masked pruning
+        print("Starting mask pruning")
+        model = AutoModel.from_pretrained(model_name, output_attentions=True)
+        model.eval()
+        prune_method_path = prune_method + "_mask"
+        model_path = Path(model_basename) / prune_method_path / prune_task / metric_path / str(prune_percent)
+        pruning_log = []
+        pruning_dict = defaultdict(list)
+        path_log = Path("pruning_logs") / model / prune_method / prune_task / metric / prune_percent / "pruning_log.txt"
 
+        try:
+            with open (path_log, "r") as f:
+                lines = f.readlines()
+                for line in lines:
+                    if prune_method == "imbalanced":
+                        layer_keep, head_to_keep, layer, head_to_prune = map(int,line.strip().split(","))
+                    else:
+                        layer, head_to_keep, head_to_prune = map(int,line.strip().split(","))
+                    pruning_log.append((layer, head_to_prune))
+        except Exception as e:
+            print("No pruning log found for: ", e, model, prune_method, metric, prune_task, prune_percent)
+            
+        for layer, head in pruning_log:
+            pruning_dict[layer].append(head)
+        
+        model_lm = huggingface.HFLM(**model_args) ## model_args are unchanged
+        if model_basename == "opt-13b":
+            model_lm._model.model = prune(model_lm._model.model, pruning_dict)
+        else:
+            model_lm._model.transformer = prune(model_lm._model.transformer, pruning_dict)
+        
+        eval_f.evaluate(model_lm, tasks, model_path)
+        print("Mask evaluated")
+        del model_lm
+        model.to('cpu')
+        del model
+        gc.collect()
+        
+        
 
 if __name__ == "__main__":
     # prune_percent = float(sys.argv[1]) # 0.25 0.5 0.75
