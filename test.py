@@ -57,20 +57,36 @@ def get_batched_attention(prompts, model, tokenizer, batch_size=10, first_token=
 
     return concatenated_attention_maps
 
-path = "attention_maps/opt-13b-random/hellaswag_attention_maps.pkl"
-if os.path.exists(path):
-    with open(path, "rb") as f:
-        att_map = pickle.load(f)
 
-with open('similarity.txt', 'r') as f:
+with open('random_similarity.txt', 'r') as f:
     data = f.read()
-similarity = eval(data)
+random_similarity = eval(data)
 
 sns.histplot(similarity)
 plt.xlabel('Cosine distance between heads')
 plt.ylabel('Frequency')
+plt.title('Histogram of cosine distances between randomly initialized OPT heads')
+plt.show()
+
+with open('opt_similarity.txt', 'r') as f:
+    opt_similarity = [float(x) for x in f.readlines()]
+
+sns.histplot(opt_similarity)
+plt.xlabel('Cosine distance between heads')
+plt.ylabel('Frequency')
 plt.title('Histogram of cosine distances between OPT heads')
 plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.histplot(random_similarity, color='blue', label='Randomly Initialized OPT-13b', kde=True)
+sns.histplot(opt_similarity, color='orange', label='Pre-trained OPT-13b', kde=True)
+
+plt.xlabel('Cosine distance between heads')
+plt.ylabel('Frequency')
+plt.title('Histogram of cosine distances between heads')
+plt.legend()
+plt.show()
+
 
 attention_maps = get_batched_attention(None, None, None, prune_task="hellaswag", model_name='opt-13b-random')
 attention_vectors = attention_vector_multiple_inputs(attention_maps)
