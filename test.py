@@ -25,6 +25,7 @@ from collections import defaultdict, Counter
 from prune import duplicate_prune_model
 from utils import *
 import pickle
+plt.style.use('fivethirtyeight')
 
 def get_batched_attention(prompts, model, tokenizer, batch_size=10, first_token=True, prune_task="paws_en", model_name=False):
     """Returns tuple of len(layers) attention maps for each layer 
@@ -57,12 +58,12 @@ def get_batched_attention(prompts, model, tokenizer, batch_size=10, first_token=
 
     return concatenated_attention_maps
 
-
 with open('random_similarity.txt', 'r') as f:
     data = f.read()
 random_similarity = eval(data)
+random_similarity = [1-x for x in random_similarity]
 
-sns.histplot(similarity)
+sns.histplot(random_similarity)
 plt.xlabel('Cosine distance between heads')
 plt.ylabel('Frequency')
 plt.title('Histogram of cosine distances between randomly initialized OPT heads')
@@ -70,6 +71,7 @@ plt.show()
 
 with open('opt_similarity.txt', 'r') as f:
     opt_similarity = [float(x) for x in f.readlines()]
+opt_similarity = [1-x for x in opt_similarity]
 
 sns.histplot(opt_similarity)
 plt.xlabel('Cosine distance between heads')
@@ -78,48 +80,60 @@ plt.title('Histogram of cosine distances between OPT heads')
 plt.show()
 
 plt.figure(figsize=(10, 6))
-sns.histplot(random_similarity, color='blue', label='Randomly Initialized OPT-13b', kde=True)
-sns.histplot(opt_similarity, color='orange', label='Pre-trained OPT-13b', kde=True)
+sns.histplot(random_similarity, color='blue', label='Randomly Initialized OPT-13b', kde=True, stat='percent')
+sns.histplot(opt_similarity, color='orange', label='Pre-trained OPT-13b', kde=True, stat='percent')
 
-plt.xlabel('Cosine distance between heads')
-plt.ylabel('Frequency')
-plt.title('Histogram of cosine distances between heads')
-plt.legend()
+plt.xlabel('Cosine similarity')
+plt.ylabel('Percent of heads')
+plt.title('Histogram of cosine similarities between heads')
+plt.legend(loc='upper left', fontsize='small')
 plt.show()
 
 
-attention_maps = get_batched_attention(None, None, None, prune_task="hellaswag", model_name='opt-13b-random')
-attention_vectors = attention_vector_multiple_inputs(attention_maps)
-prune_percent = 1
-n_layers = 40
-n_heads = 40
+def get_similarities(task="hellaswag", model_name="opt-13b", n_layers=40, n_heads=40, prune_percent=1, top_n=100):
 
-distances_list = []
-distances_list_cache = []
-heads_to_prune = prune_percent * n_layers * n_heads
-for layer_number in range(n_layers):
-    layer_heads = attention_vectors[layer_number*n_heads:(layer_number+1)*n_heads]
-    squaref = squareform(pdist(layer_heads, metric='cosine'))
-    for head_id, squaref_row in enumerate(squaref):
-        squaref_row_updated = []
-        for target_head_id, distance in enumerate(squaref_row):
-            squaref_row_updated.append((target_head_id, distance))
-        squaref_row_updated.pop(head_id) # Remove the distance to itself
-        squaref_row_updated.sort(key=lambda x: x[1])
-        distances_list.append([layer_number, head_id, squaref_row_updated])
-heads_pruned = set()
-while heads_to_prune != 0:
-    distances_list.sort(key=lambda x: x[2][0][1])
-    # Remove the head with the smallest distance
-    layer_number, head_id, squaref_row = distances_list[0]
-    min_dist_head = squaref_row[0][0]
-    if (layer_number, min_dist_head) not in heads_pruned:
-        heads_pruned.add((layer_number, min_dist_head))
-        heads_to_prune -= 1
-        popped_head = distances_list.pop(0)
-        distances_list_cache.append(popped_head)
-    else:
-        distances_list[0][2].pop(0)
+    attention_maps = get_batched_attention(None, None, None, prune_task=task, model_name=model_name)
+    attention_vectors = attention_vector_multiple_inputs(attention_maps)
+
+    distances_list = []
+    distances_list_cache = []
+    amazon_list_cache = []
+    heads_to_prune = prune_percent * n_layers * n_heads
+    amazon_importance = get_amazon_importance()
+    amazon_importance.sort(key=lambda x: x[2], reverse=True)[top_n]  
+    amazon_importance = set([x[:2] for x in amazon_importance])
+
+    for layer_number in range(n_layers):
+        layer_heads = attention_vectors[layer_number*n_heads:(layer_number+1)*n_heads]
+        squaref = squareform(pdist(layer_heads, metric='cosine'))
+        for head_id, squaref_row in enumerate(squaref):
+            squaref_row_updated = []
+            for target_head_id, distance in enumerate(squaref_row):
+                squaref_row_updated.append((target_head_id, distance))
+            squaref_row_updated.pop(head_id) # Remove the distance to itself
+            squaref_row_updated.sort(key=lambda x: x[1])
+            distances_list.append([layer_number, head_id, squaref_row_updated])
+    heads_pruned = set()
+    while heads_to_prune != 0:
+        distances_list.sort(key=lambda x: x[2][0][1])
+        # Remove the head with the smallest distance
+        layer_number, head_id, squaref_row = distances_list[0]
+        min_dist_head = squaref_row[0][0]
+        if (layer_number, min_dist_head) not in heads_pruned:
+            heads_pruned.add((layer_number, min_dist_head))
+            heads_to_prune -= 1
+            popped_head = distances_list.pop(0)
+            # Check if head is in the top n most important heads
+            if (layer_number, head_id) in amazon_importance:
+                amazon_list_cache.append(popped_head)
+            else:
+                distances_list_cache.append(popped_head)
+        else:
+            distances_list[0][2].pop(0)
+
+    return distances_list_cache, amazon_list_cache
+
+similarities, amazon_similarities = get_similarities()
 
 similarities = []
 for head in distances_list_cache:
@@ -132,6 +146,21 @@ plt.ylabel('Frequency')
 plt.title('Histogram of cosine distances between randomly initialized OPT heads')
 plt.show()
 
+def get_amazon_attention_mask(path = 'head_importance/0shot_hellaswag.pkl', head_percent_mask = 50):
+    head_importance = pickle.load(open(path, 'rb'))
+    num_hidden_layers = head_importance.shape[0]
+    num_heads= head_importance.shape[1]
+
+    head_importance_list = []
+    for layer in range(num_hidden_layers):
+        for head in range(num_heads):
+            head_importance_list.append((layer, head, float(head_importance[layer, head])))
+
+    return head_importance_list
+
+importance = get_amazon_attention_mask()
+importance.sort(key=lambda x: x[2], reverse=True)
+importance[:200]
 
 prompts = get_prompts_from_file('hellaswag')
 #model_name = "bigscience/bloom-560m"
@@ -142,6 +171,11 @@ config = model.config
 random_model = AutoModel.from_config(config)
 attention_maps_random = get_batched_attention(prompts, random_model, tokenizer, prune_task='hellaswag')
 attention_vectors = attention_vector_multiple_inputs(attention_maps_random)
+from transformers import OPTModel
+
+model = AutoModel.from_pretrained('facebook/opt-350m', output_attentions=True)#.to(device)  # Configure model to return attention values
+test = AutoModel.from_config(model.config)
+tokenizer = AutoTokenizer.from_pretrained('facebook/opt-350m', use_fast=False)
 
 attention_maps_bloom = get_batched_attention(prompts, model, tokenizer, prune_task='hellaswag')
 attention_vectors = attention_vector_multiple_inputs(attention_maps_bloom)
@@ -430,7 +464,7 @@ def get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True):
 #prompt = "The North Atlantic Treaty Organization (NATO) is an intergovernmental military alliance of 32 member states"
 #prompt = "Write once, run anywhere, right? Yes, Write anywhere, once run"
 prompt = "Do you have the time? No. Mary has the time! I think"
-att, tok = get_attention(prompt)
+att, tok = get_attention(prompt, model=test, tokenizer=tokenizer, first_token=False)
 inputs = tokenizer.encode(prompt, return_tensors='pt')
 tok= tokenizer.convert_ids_to_tokens(inputs[0])
 model_view(att, tok)
@@ -457,7 +491,7 @@ tok= tokenizer.convert_ids_to_tokens(inputs[0])
 model_view(att, tok)  # Display model view
 #head_view(att, tok, layer=15, heads=[1])
 
-visualize_single(att[12][0, 14, :, :], tok)
+visualize_single(att[10][0, 2, :, :], tok)
 
 clustering = pickle.load(open('clustering.pkl', 'rb'))
 clustering
