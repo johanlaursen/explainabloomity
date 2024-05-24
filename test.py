@@ -26,6 +26,202 @@ from prune import duplicate_prune_model
 from utils import *
 import pickle
 
+def get_batched_attention(prompts, model, tokenizer, batch_size=10, first_token=True, prune_task="paws_en", model_name=False):
+    """Returns tuple of len(layers) attention maps for each layer 
+    each attention map is of shape (total_prompts, num_heads, max_seq_len, max_seq_len)"""
+    if not model_name:
+        model_name = os.path.basename(model.config._name_or_path)
+    path = f"attention_maps/{model_name}/{prune_task}_attention_maps.pkl"
+    if os.path.exists(path):
+        with open(path, "rb") as f:
+            print('before load')
+            return pickle.load(f)
+    # Calculate the maximum length after tokenization
+    max_length = max(len(tokenizer.encode(prompt)) for prompt in prompts)
+
+    # Create a DataLoader for batch processing
+    prompts_dataloader = DataLoader(prompts, batch_size=batch_size)
+
+    all_attention_maps = []
+
+    for batch_prompts in prompts_dataloader:
+        inputs = tokenizer(list(batch_prompts), return_tensors='pt', padding='max_length', truncation=True, max_length=max_length)
+        with torch.no_grad():
+            outputs = model(**inputs)
+            attention = outputs[-1]
+
+        all_attention_maps.append(attention)
+
+    # Concatenate attention maps across all batches
+    concatenated_attention_maps = [torch.cat([batch[i] for batch in all_attention_maps], dim=0) for i in range(len(all_attention_maps[0]))]
+
+    return concatenated_attention_maps
+
+
+with open('random_similarity.txt', 'r') as f:
+    data = f.read()
+random_similarity = eval(data)
+
+sns.histplot(similarity)
+plt.xlabel('Cosine distance between heads')
+plt.ylabel('Frequency')
+plt.title('Histogram of cosine distances between randomly initialized OPT heads')
+plt.show()
+
+with open('opt_similarity.txt', 'r') as f:
+    opt_similarity = [float(x) for x in f.readlines()]
+
+sns.histplot(opt_similarity)
+plt.xlabel('Cosine distance between heads')
+plt.ylabel('Frequency')
+plt.title('Histogram of cosine distances between OPT heads')
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.histplot(random_similarity, color='blue', label='Randomly Initialized OPT-13b', kde=True)
+sns.histplot(opt_similarity, color='orange', label='Pre-trained OPT-13b', kde=True)
+
+plt.xlabel('Cosine distance between heads')
+plt.ylabel('Frequency')
+plt.title('Histogram of cosine distances between heads')
+plt.legend()
+plt.show()
+
+
+attention_maps = get_batched_attention(None, None, None, prune_task="hellaswag", model_name='opt-13b-random')
+attention_vectors = attention_vector_multiple_inputs(attention_maps)
+prune_percent = 1
+n_layers = 40
+n_heads = 40
+
+distances_list = []
+distances_list_cache = []
+heads_to_prune = prune_percent * n_layers * n_heads
+for layer_number in range(n_layers):
+    layer_heads = attention_vectors[layer_number*n_heads:(layer_number+1)*n_heads]
+    squaref = squareform(pdist(layer_heads, metric='cosine'))
+    for head_id, squaref_row in enumerate(squaref):
+        squaref_row_updated = []
+        for target_head_id, distance in enumerate(squaref_row):
+            squaref_row_updated.append((target_head_id, distance))
+        squaref_row_updated.pop(head_id) # Remove the distance to itself
+        squaref_row_updated.sort(key=lambda x: x[1])
+        distances_list.append([layer_number, head_id, squaref_row_updated])
+heads_pruned = set()
+while heads_to_prune != 0:
+    distances_list.sort(key=lambda x: x[2][0][1])
+    # Remove the head with the smallest distance
+    layer_number, head_id, squaref_row = distances_list[0]
+    min_dist_head = squaref_row[0][0]
+    if (layer_number, min_dist_head) not in heads_pruned:
+        heads_pruned.add((layer_number, min_dist_head))
+        heads_to_prune -= 1
+        popped_head = distances_list.pop(0)
+        distances_list_cache.append(popped_head)
+    else:
+        distances_list[0][2].pop(0)
+
+similarities = []
+for head in distances_list_cache:
+    similarity = [x[1] for x in head[2]]
+    similarities.extend(similarity)
+
+sns.histplot(similarities)
+plt.xlabel('Cosine distance between heads')
+plt.ylabel('Frequency')
+plt.title('Histogram of cosine distances between randomly initialized OPT heads')
+plt.show()
+
+
+prompts = get_prompts_from_file('hellaswag')
+#model_name = "bigscience/bloom-560m"
+model_name = "facebook/opt-13b"
+model = AutoModel.from_pretrained(model_name, output_attentions=True)#.to(device)  # Configure model to return attention values
+tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
+config = model.config
+random_model = AutoModel.from_config(config)
+attention_maps_random = get_batched_attention(prompts, random_model, tokenizer, prune_task='hellaswag')
+attention_vectors = attention_vector_multiple_inputs(attention_maps_random)
+
+attention_maps_bloom = get_batched_attention(prompts, model, tokenizer, prune_task='hellaswag')
+attention_vectors = attention_vector_multiple_inputs(attention_maps_bloom)
+prune_percent = 1
+n_layers = 24
+n_heads = 16
+
+attention_maps = get_batched_attention(None, None, None, prune_task="hellaswag", model_name='opt-13b-random')
+attention_vectors = attention_vector_multiple_inputs(attention_maps)
+prune_percent = 1
+n_layers = 40
+n_heads = 40
+
+
+
+
+
+
+distances_list = []
+distances_list_cache = []
+heads_to_prune = prune_percent * n_layers * n_heads
+for layer_number in range(n_layers):
+    layer_heads = attention_vectors[layer_number*n_heads:(layer_number+1)*n_heads]
+    squaref = squareform(pdist(layer_heads, metric='cosine'))
+    for head_id, squaref_row in enumerate(squaref):
+        squaref_row_updated = []
+        for target_head_id, distance in enumerate(squaref_row):
+            squaref_row_updated.append((target_head_id, distance))
+        squaref_row_updated.pop(head_id) # Remove the distance to itself
+        squaref_row_updated.sort(key=lambda x: x[1])
+        distances_list.append([layer_number, head_id, squaref_row_updated])
+heads_pruned = set()
+while heads_to_prune != 0:
+    distances_list.sort(key=lambda x: x[2][0][1])
+    # Remove the head with the smallest distance
+    layer_number, head_id, squaref_row = distances_list[0]
+    min_dist_head = squaref_row[0][0]
+    if (layer_number, min_dist_head) not in heads_pruned:
+        heads_pruned.add((layer_number, min_dist_head))
+        heads_to_prune -= 1
+        popped_head = distances_list.pop(0)
+        distances_list_cache.append(popped_head)
+    else:
+        distances_list[0][2].pop(0)
+
+similarities = []
+for head in distances_list_cache:
+    similarity = [x[1] for x in head[2]]
+    similarities.extend(similarity)
+print(similarities)
+sns.histplot(similarities)
+
+
+similarities_random = []
+for head in distances_list_cache:
+    similarity = [x[1] for x in head[2]]
+    similarities_random.extend(similarity)
+sns.histplot(similarities_random)
+print(similarities_random)
+
+similarities_bloom = []
+for head in distances_list_cache:
+    similarity = [x[1] for x in head[2]]
+    similarities_bloom.extend(similarity)
+print(similarities_bloom)
+
+sns.histplot(similarities)
+
+
+def compare_model_weights(model1, model2):
+    for (name1, param1), (name2, param2) in zip(model1.named_parameters(), model2.named_parameters()):
+        if not torch.allclose(param1, param2, atol=1e-7):  # Use a strict tolerance
+            print(f"Weights differ in layer: {name1}")
+            return False
+    print("All weights are identical (which is not expected)")
+    return True
+
+# Compare the weights of the pretrained and randomly initialized models
+compare_model_weights(model, random_model)
+
 head_importance = pickle.load(open('head_importance/0shot_hellaswag.pkl', 'rb'))
 head_values, head_indices = torch.sort(head_importance.view(-1))
 x = np.array(head_importance.view(-1))
