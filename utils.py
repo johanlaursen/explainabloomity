@@ -180,13 +180,15 @@ def get_attention_multiple_inputs(prompts, model, tokenizer, first_token=True):
         attention = outputs[-1]
     return attention
 
-def get_batched_attention(prompts, model, tokenizer, batch_size=10, first_token=True, prune_task="paws_en"):
+def get_batched_attention(prompts, model, tokenizer, batch_size=10, first_token=True, prune_task="paws_en", model_name=False):
     """Returns tuple of len(layers) attention maps for each layer 
     each attention map is of shape (total_prompts, num_heads, max_seq_len, max_seq_len)"""
-    model_name = os.path.basename(model.config._name_or_path)
-    path = f"/home/data_shares/mapillary/prompts/{model_name}/{prune_task}_attention_maps.pkl"
+    if not model_name:
+        model_name = os.path.basename(model.config._name_or_path)
+    path = f"attention_maps/{model_name}/{prune_task}_attention_maps.pkl"
     if os.path.exists(path):
         with open(path, "rb") as f:
+            print('before load')
             return pickle.load(f)
     # Calculate the maximum length after tokenization
     max_length = max(len(tokenizer.encode(prompt)) for prompt in prompts)
@@ -647,7 +649,7 @@ def get_amazon_prune_heads(path="head_importance/0shot_hellaswag.pkl", head_perc
                 prune_heads.append((layer_number, i))
     return prune_heads
 
-def get_amazon_importance(path = 'head_importance/0shot_hellaswag.pkl', head_percent_mask = 50):
+def get_amazon_importance(path = 'head_importance/0shot_hellaswag.pkl'):
     head_importance = pickle.load(open(path, 'rb'))
     num_hidden_layers = head_importance.shape[0]
     num_heads= head_importance.shape[1]
