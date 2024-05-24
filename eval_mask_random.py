@@ -19,7 +19,8 @@ def _handle_non_serializable(o):
 
 
 path = "/home/data_shares/mapillary/thesis_models/pruned_models"
-models = ("opt-13b",)
+# models = ("opt-13b",)
+models = ("bloom-7b1",)
 prune_methods=(
     # "balanced",
     # "imbalanced" ,
@@ -41,17 +42,21 @@ prunetasks=(
 )
 
 prune_percents=(
+    "0.1",
+    "0.2",
     "0.25",
+    "0.3",
+    "0.4",
     "0.5",
     "0.75",
 )
 tasks=(
-    "lambada_openai",
-    "paws_en",
+    # "lambada_openai",
+    # "paws_en",
     "hellaswag",
-    "arc_easy",
-    "blimp_ellipsis_n_bar_1",
-    "blimp_irregular_plural_subject_verb_agreement_1"
+    # "arc_easy",
+    # "blimp_ellipsis_n_bar_1",
+    # "blimp_irregular_plural_subject_verb_agreement_1"
 )
 for model in models:
     for prune_method in prune_methods:
@@ -63,6 +68,8 @@ for model in models:
                     model_path = Path(model) / prune_method_path / prunetask / metric / prune_percent
                     if "opt" in model:
                         model_name = f"facebook/{model}"
+                    else:
+                        model_name = f"bigscience/{model}"
                     pruning_log = []
                     pruning_dict = defaultdict(list)
                     layers, heads = get_model_layers_and_heads(model)
@@ -84,7 +91,11 @@ for model in models:
                     "device": "cuda:0"
                     }
                     model_lm = huggingface.HFLM(**model_args)
-                    model_lm._model.model= prune(model_lm._model.model, pruning_dict)
+                    if model_name == "bigscience/bloom-7b1":
+                        model_lm._model.transformer = prune(model_lm._model.transformer, pruning_dict)
+                    else:
+                        # opt
+                        model_lm._model.model= prune(model_lm._model.model, pruning_dict)
                     print("Pruning done for: ", model, prune_method, metric, prunetask, prune_percent)
                     for task in tasks:
                         model_lm._model.to("cuda:0")

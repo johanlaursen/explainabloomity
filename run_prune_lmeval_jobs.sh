@@ -11,7 +11,7 @@ model_basename="${model_name##*/}"
 
 
 prune_methods=(
-    "balanced"
+    # "balanced"
     # "imbalanced"
     # "imbalanced_amazon"
     "imbalanced_correct"
@@ -21,10 +21,10 @@ metrics=(
     # "euclidean"
 )
 prunetasks=(
-    "paws_en"
+    # "paws_en"
     "hellaswag"
-    "blimp_ellipsis_n_bar_1"
-    "arc_easy"
+    # "blimp_ellipsis_n_bar_1"
+    # "arc_easy"
 )
 
 for metric in "${metrics[@]}"

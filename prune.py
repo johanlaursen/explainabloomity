@@ -166,7 +166,8 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
     # attention is tuple of len(layers) where 
     # each element is a tensor of shape 
     # (num_prompts, num_heads, num_tokens, num_tokens)
-
+    if prune_percent == 0:
+        return model
     counter = Counter()
     pruning_log = []
     if prune_method == "balanced" or prune_method == "imbalanced_amazon" or prune_method =="imbalanced_correct":
@@ -253,9 +254,9 @@ def duplicate_prune_model(prompts, path, model, model_name, tokenizer, prune_met
     model_name = os.path.basename(model_name)
     path_model = f"{model_name}/{prune_method}/{prune_task}/{prune_metric}/{prune_percent}"
     
-    model.half()
     if save:
+        model.half()
         model.save_pretrained(path+path_model+"/model")
+        tokenizer.save_pretrained(path+path_model+"/model")
     save_pruning_log(path_model, pruning_log)
-    tokenizer.save_pretrained(path+path_model+"/model")
     return model

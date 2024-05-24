@@ -12,6 +12,8 @@ from pathlib import Path
 import os
 import gc
 
+SAVE_MODEL=False
+
 def main(model_name, path, metric, group_metric, prune_task, prune_method,):
     tasks=(
     # "lambada_openai",
@@ -22,6 +24,7 @@ def main(model_name, path, metric, group_metric, prune_task, prune_method,):
     # "blimp_irregular_plural_subject_verb_agreement_1",
 )
     prune_percents=(
+        0, 
         0.1,
         0.2,
         0.25,
@@ -47,7 +50,7 @@ def main(model_name, path, metric, group_metric, prune_task, prune_method,):
                                         group_metric=group_metric,
                                         prune_method=prune_method,
                                         verbose=True,
-                                        save=False,)
+                                        save=SAVE_MODEL,)
         print("Pruning done for: ", model_name, prune_method, metric, prune_task, prune_percent)
         # path_log = Path("pruning_logs") / model / prune_method / prune_task / metric / prune_percent / "pruning_log.txt"
         prune_method_path = prune_method # + "_mask"
@@ -61,7 +64,10 @@ def main(model_name, path, metric, group_metric, prune_task, prune_method,):
                         "device": "cuda:0"
                         }   
         model_lm = huggingface.HFLM(**model_args)
-        model_lm._model.model = model
+        if model_basename == "opt-13b":
+            model_lm.model.model = model
+        elif model_basename == "bloom-7b1":
+            model_lm.model.transformer = model
         eval_f.evaluate(model_lm, tasks, model_path)    
         print("Evaluted: ", model_name, prune_method, metric_path, prune_task, prune_percent)
         ## Make sure models aren't hanging around when no longer needed
@@ -70,7 +76,8 @@ def main(model_name, path, metric, group_metric, prune_task, prune_method,):
         del model
         gc.collect()
         
-        
+        if prune_percent == 0:
+            continue
         ### masked pruning
         print("Starting mask pruning")
         model = AutoModel.from_pretrained(model_name, output_attentions=True)
@@ -79,28 +86,27 @@ def main(model_name, path, metric, group_metric, prune_task, prune_method,):
         model_path = Path(model_basename) / prune_method_path / prune_task / metric_path / str(prune_percent)
         pruning_log = []
         pruning_dict = defaultdict(list)
-        path_log = Path("pruning_logs") / model / prune_method / prune_task / metric / prune_percent / "pruning_log.txt"
+        metric_path = metric + "_" + group_metric
+        path_log = Path("pruning_logs") / model_basename / prune_method / prune_task / metric_path / str(prune_percent) / "pruning_log.txt"
 
-        try:
-            with open (path_log, "r") as f:
-                lines = f.readlines()
-                for line in lines:
-                    if prune_method == "imbalanced":
-                        layer_keep, head_to_keep, layer, head_to_prune = map(int,line.strip().split(","))
-                    else:
-                        layer, head_to_keep, head_to_prune = map(int,line.strip().split(","))
-                    pruning_log.append((layer, head_to_prune))
-        except Exception as e:
-            print("No pruning log found for: ", e, model, prune_method, metric, prune_task, prune_percent)
+        with open (path_log, "r") as f:
+            lines = f.readlines()
+            for line in lines:
+                if prune_method == "imbalanced":
+                    layer_keep, head_to_keep, layer, head_to_prune = map(int,line.strip().split(","))
+                else:
+                    layer, head_to_keep, head_to_prune = map(int,line.strip().split(","))
+                pruning_log.append((layer, head_to_prune))
+        print("Pruning log found for: ", model, prune_method, metric, prune_task, prune_percent)
             
         for layer, head in pruning_log:
             pruning_dict[layer].append(head)
         
         model_lm = huggingface.HFLM(**model_args) ## model_args are unchanged
         if model_basename == "opt-13b":
-            model_lm._model.model = prune(model_lm._model.model, pruning_dict)
+            model_lm.model.model = prune(model_lm.model.model, pruning_dict)
         else:
-            model_lm._model.transformer = prune(model_lm._model.transformer, pruning_dict)
+            model_lm.model.transformer = prune(model_lm.model.transformer, pruning_dict)
         
         eval_f.evaluate(model_lm, tasks, model_path)
         print("Mask evaluated")

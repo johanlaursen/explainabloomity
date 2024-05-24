@@ -8,7 +8,7 @@
 #SBATCH --mem=32G
 #SBATCH --time=0-0:15:00          # Run time (hh:mm:ss) 
 #SBATCH --partition=red,brown    # Run on either the red or brown queue
-#SBATCH --dependency=afterok:176247
+#SBATCH --dependency=afteranhy:178146,178147,178148,178184
 #SBATCH --mail-type=FAIL,END
 
 git pull
