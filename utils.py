@@ -188,7 +188,6 @@ def get_batched_attention(prompts, model, tokenizer, batch_size=10, first_token=
     path = f"attention_maps/{model_name}/{prune_task}_attention_maps.pkl"
     if os.path.exists(path):
         with open(path, "rb") as f:
-            print('before load')
             return pickle.load(f)
     # Calculate the maximum length after tokenization
     max_length = max(len(tokenizer.encode(prompt)) for prompt in prompts)
