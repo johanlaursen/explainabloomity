@@ -647,6 +647,18 @@ def get_amazon_prune_heads(path="head_importance/0shot_hellaswag.pkl", head_perc
                 prune_heads.append((layer_number, i))
     return prune_heads
 
+def get_amazon_importance(path = 'head_importance/0shot_hellaswag.pkl', head_percent_mask = 50):
+    head_importance = pickle.load(open(path, 'rb'))
+    num_hidden_layers = head_importance.shape[0]
+    num_heads= head_importance.shape[1]
+
+    head_importance_list = []
+    for layer in range(num_hidden_layers):
+        for head in range(num_heads):
+            head_importance_list.append((layer, head, float(head_importance[layer, head])))
+
+    return head_importance_list
+
 def load_clusters_from_log(path):
     clusters = defaultdict(list)
     with open(path, 'r') as file:
