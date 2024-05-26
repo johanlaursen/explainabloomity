@@ -16,6 +16,7 @@ def _handle_non_serializable(o):
         return str(o)
 
 def evaluate(model_lm, tasks, model_path, ):
+    model_lm.model.half()
     for task in tasks:
         print("Evaluating: ", task, model_path)
         model_lm._model.to("cuda:0")
