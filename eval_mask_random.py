@@ -19,8 +19,9 @@ def _handle_non_serializable(o):
 
 
 path = "/home/data_shares/mapillary/thesis_models/pruned_models"
-# models = ("opt-13b",)
-models = ("bloom-7b1",)
+models = ("opt-13b",
+          "bloom-7b1",)
+# models = ("bloom-7b1",)
 prune_methods=(
     # "balanced",
     # "imbalanced" ,
@@ -63,7 +64,6 @@ for model in models:
         for metric in metrics:
             for prunetask in prunetasks:
                 for prune_percent in prune_percents:
-                    # path_log = Path("pruning_logs") / model / prune_method / prunetask / metric / prune_percent / "pruning_log.txt"
                     prune_method_path = prune_method + "_mask"
                     model_path = Path(model) / prune_method_path / prunetask / metric / prune_percent
                     if "opt" in model:
@@ -79,11 +79,11 @@ for model in models:
                         for layer in range(layers):
                             heads_list.append((layer, head))
                     
-                    to_prune = random.choices(heads_list, k=int(k))
+                    to_prune = random.sample(heads_list, int(k))
                     pruning_dict = defaultdict(list)
                     for head in to_prune:
                         pruning_dict[head[0]].append(head[1])
-                    
+                    print(pruning_dict)
                     model_args = {
                     "pretrained": str(model_name),
                     "dtype":"float16",
