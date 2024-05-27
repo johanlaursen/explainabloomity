@@ -424,7 +424,7 @@ sorted(Counter([layer for layer, head in head_indices]).items())
 
 
 model_name = "bigscience/bloom-560m"
-#model_name = "facebook/opt-13b"
+#model_name = "facebook/opt-350m"
 model = AutoModel.from_pretrained(model_name, output_attentions=True)#.to(device)  # Configure model to return attention values
 tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
 #prompt = "A man is riding on a horse. he runs after a calf and ties its legs."
@@ -445,7 +445,8 @@ def get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True):
 #prompt = "The North Atlantic Treaty Organization (NATO) is an intergovernmental military alliance of 32 member states"
 #prompt = "Write once, run anywhere, right? Yes, Write anywhere, once run"
 prompt = "Do you have the time? No. Mary has the time! I think"
-att, tok = get_attention(prompt, model=test, tokenizer=tokenizer, first_token=False)
+prompt = "This is an example"
+att, tok = get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True)
 inputs = tokenizer.encode(prompt, return_tensors='pt')
 tok= tokenizer.convert_ids_to_tokens(inputs[0])
 model_view(att, tok)
@@ -454,25 +455,78 @@ model_view(att, tok)
 with open('attention.pkl', 'wb') as f:
     pickle.dump(att, f)
 
-def visualize_single(att_map, sentence):
-    """
-    Attention map for a given layer and head
-    """
-    
-    plt.figure(figsize=(16, 12))
-    plt.imshow(att_map, cmap='Reds')
-    plt.xticks(range(len(sentence)), sentence, rotation=60, fontsize=12)
-    plt.yticks(range(len(sentence)), sentence, fontsize=12)
 
-    plt.grid(False)
+prompt = "This is an example"
+att, _ = get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True)
+tok = ['This', 'is', 'an', 'example']
+attention_map = att[1][0, 5, :, :]
+flattened_att = attention_map.flatten()
 
-inputs = tokenizer.encode(prompt, return_tensors='pt')
-tok= tokenizer.convert_ids_to_tokens(inputs[0])
-#att = pickle.load(open('attention_write_once.pkl', 'rb'))
-model_view(att, tok)  # Display model view
-#head_view(att, tok, layer=15, heads=[1])
+tok2 = []
+for i in range(len(tok)):
+    for j in range(len(tok)):
+        if flattened_att[len(tok)*i+j] != 0:
+            tok2.append(f"{tok[i]} -> {tok[j]}")
 
-visualize_single(att[10][0, 2, :, :], tok)
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), gridspec_kw={'height_ratios': [6, 1], 'hspace': 0.30})
+
+heatmap1 = sns.heatmap(attention_map, annot=True, fmt='.1g', cmap='Reds', cbar=False, xticklabels=tok, yticklabels=tok, ax=ax1)
+heatmap1.set_xticklabels(heatmap1.get_xticklabels(), rotation=0)
+heatmap1.set_yticklabels(heatmap1.get_yticklabels(), rotation=0)
+
+tok2 = []
+for i in range(len(tok)):
+    for j in range(len(tok)):
+        if flattened_att[len(tok) * i + j] != 0:
+            tok2.append(f"{tok[i]} -> {tok[j]}")
+flattened_att2 = flattened_att[flattened_att != 0]
+
+sns.heatmap(flattened_att2[np.newaxis, :], annot=True, fmt='.1g', cmap='Reds', cbar=False, xticklabels=tok2, yticklabels=False, ax=ax2)
+ax2.set_xticklabels(ax2.get_xticklabels(), rotation=75)
+
+plt.annotate('', xy=(0.5, 0.34), xytext=(0.5, 0.39), arrowprops=dict(facecolor='black', shrink=0.05), 
+             xycoords='figure fraction', textcoords='figure fraction')
+
+plt.tight_layout()
+plt.show()
+
+
+###
+
+prompt = "Yet one more example"
+att, _ = get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True)
+tok = ['Yet', 'one', 'more', 'example']
+attention_map = att[1][0, 5, :, :]
+flattened_att = attention_map.flatten()
+
+tok2 = []
+for i in range(len(tok)):
+    for j in range(len(tok)):
+        if flattened_att[len(tok)*i+j] != 0:
+            tok2.append(f"{tok[i]} -> {tok[j]}")
+
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), gridspec_kw={'height_ratios': [6, 1], 'hspace': 0.30})
+
+heatmap1 = sns.heatmap(attention_map, annot=True, fmt='.1g', cmap='Reds', cbar=False, xticklabels=tok, yticklabels=tok, ax=ax1)
+heatmap1.set_xticklabels(heatmap1.get_xticklabels(), rotation=0)
+heatmap1.set_yticklabels(heatmap1.get_yticklabels(), rotation=0)
+
+tok2 = []
+for i in range(len(tok)):
+    for j in range(len(tok)):
+        if flattened_att[len(tok) * i + j] != 0:
+            tok2.append(f"{tok[i]} -> {tok[j]}")
+flattened_att2 = flattened_att[flattened_att != 0]
+
+sns.heatmap(flattened_att2[np.newaxis, :], annot=True, fmt='.1g', cmap='Reds', cbar=False, xticklabels=tok2, yticklabels=False, ax=ax2)
+ax2.set_xticklabels(ax2.get_xticklabels(), rotation=75)
+
+plt.annotate('', xy=(0.5, 0.34), xytext=(0.5, 0.39), arrowprops=dict(facecolor='black', shrink=0.05), 
+             xycoords='figure fraction', textcoords='figure fraction')
+
+plt.tight_layout()
+plt.show()
+
 
 clustering = pickle.load(open('clustering.pkl', 'rb'))
 clustering
