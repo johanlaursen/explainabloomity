@@ -35,3 +35,5 @@ def evaluate(model_lm, tasks, model_path, ):
         output_path_file = output_path.joinpath("results.json")
         dumped = json.dumps(results, indent=2, default=_handle_non_serializable, ensure_ascii=False)
         output_path_file.open("w", encoding="utf-8").write(dumped)
+        
+        

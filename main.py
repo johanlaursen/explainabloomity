@@ -16,12 +16,11 @@ SAVE_MODEL=False
 
 def main(model_name, path, metric, group_metric, prune_task, prune_method,):
     tasks=(
-    # "lambada_openai",
-    # "paws_en",
+    "paws_en",
     "hellaswag",
-    # "blimp_ellipsis_n_bar_1",
-    # "blimp_irregular_plural_subject_verb_agreement_1",
-    # "arc_easy",
+    "blimp_ellipsis_n_bar_1",
+    "blimp_irregular_plural_subject_verb_agreement_1",
+    "arc_easy",
 )
     prune_percents=(
         0, 
