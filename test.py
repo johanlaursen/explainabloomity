@@ -30,7 +30,7 @@ plt.style.use('fivethirtyeight')
 with open('random_similarity.txt', 'r') as f:
     data = f.read()
 random_similarity = eval(data)
-random_similarity = [1-x for x in random_similarity]
+random_similarity = [x for x in random_similarity]
 
 sns.histplot(random_similarity)
 plt.xlabel('Cosine distance between heads')
@@ -40,11 +40,11 @@ plt.show()
 
 with open('opt_similarity.txt', 'r') as f:
     opt_similarity = [float(x) for x in f.readlines()]
-opt_similarity = [1-x for x in opt_similarity]
+opt_similarity = [x for x in opt_similarity]
 
-sns.histplot(opt_similarity)
+sns.histplot(opt_similarity, color='orange', label='Pre-trained OPT-13b', stat='percent')
 plt.xlabel('Cosine distance between heads')
-plt.ylabel('Frequency')
+plt.ylabel('Percent of heads')
 plt.title('Histogram of cosine distances between OPT heads')
 plt.show()
 
@@ -52,10 +52,23 @@ plt.figure(figsize=(10, 6))
 sns.histplot(random_similarity, color='blue', label='Randomly Initialized OPT-13b', kde=True, stat='percent')
 sns.histplot(opt_similarity, color='orange', label='Pre-trained OPT-13b', kde=True, stat='percent')
 
-plt.xlabel('Cosine similarity')
+plt.xlabel('Cosine distance')
 plt.ylabel('Percent of heads')
-plt.title('Histogram of cosine similarities between heads')
-plt.legend(loc='upper left', fontsize='small')
+plt.title('Histogram of cosine distance between heads')
+plt.legend(loc='upper right', fontsize='small')
+plt.show()
+
+amazon_importance = get_amazon_importance()
+
+ai = [x[2] for x in amazon_importance]
+#normalize ai from 0 to 1
+
+ai = [(x - min(ai)) / (max(ai) - min(ai)) for x in ai]
+
+sns.histplot(ai, color='orange', stat='percent', bins=120)
+plt.xlabel('Importance score')
+plt.ylabel('Percent of heads')
+plt.title('Histogram of OPT head importance scores')
 plt.show()
 
 
@@ -456,39 +469,40 @@ with open('attention.pkl', 'wb') as f:
     pickle.dump(att, f)
 
 
+def make_heatmap(prompt, model, tokenizer):
+    att, _ = get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True)
+    tok = prompt.split()
+    attention_map = att[1][0, 5, :, :]
+    flattened_att = attention_map.flatten()
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), gridspec_kw={'height_ratios': [5, 1], 'hspace': 0.30})
+
+    heatmap1 = sns.heatmap(attention_map, annot=True, fmt='.1g', cmap='Reds', cbar=False, xticklabels=tok, yticklabels=tok, 
+                        ax=ax1, annot_kws={"size": 18})
+    heatmap1.set_xticklabels(heatmap1.get_xticklabels(), rotation=0, fontsize=18)
+    heatmap1.set_yticklabels(heatmap1.get_yticklabels(), rotation=0, fontsize=18)
+
+    tok2 = []
+    for i in range(len(tok)):
+        for j in range(len(tok)):
+            if flattened_att[len(tok) * i + j] != 0:
+                tok2.append(f"{tok[i]} -> {tok[j]}")
+    flattened_att2 = flattened_att[flattened_att != 0]
+
+    sns.heatmap(flattened_att2[np.newaxis, :], annot=True, fmt='.1g', cmap='Reds', cbar=False, xticklabels=tok2, 
+                yticklabels=False, ax=ax2, annot_kws={"size": 18})
+    ax2.set_xticklabels(ax2.get_xticklabels(), rotation=75, fontsize=16)
+
+    plt.annotate('', xy=(0.5, 0.38), xytext=(0.5, 0.42), arrowprops=dict(facecolor='black', shrink=0.05), 
+                xycoords='figure fraction', textcoords='figure fraction')
+
+    plt.tight_layout()
+    plt.show()
+
 prompt = "This is an example"
-att, _ = get_attention(prompt, model=model, tokenizer=tokenizer, first_token=True)
-tok = ['This', 'is', 'an', 'example']
-attention_map = att[1][0, 5, :, :]
-flattened_att = attention_map.flatten()
+make_heatmap(prompt, model, tokenizer)
 
-tok2 = []
-for i in range(len(tok)):
-    for j in range(len(tok)):
-        if flattened_att[len(tok)*i+j] != 0:
-            tok2.append(f"{tok[i]} -> {tok[j]}")
-
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), gridspec_kw={'height_ratios': [6, 1], 'hspace': 0.30})
-
-heatmap1 = sns.heatmap(attention_map, annot=True, fmt='.1g', cmap='Reds', cbar=False, xticklabels=tok, yticklabels=tok, ax=ax1)
-heatmap1.set_xticklabels(heatmap1.get_xticklabels(), rotation=0)
-heatmap1.set_yticklabels(heatmap1.get_yticklabels(), rotation=0)
-
-tok2 = []
-for i in range(len(tok)):
-    for j in range(len(tok)):
-        if flattened_att[len(tok) * i + j] != 0:
-            tok2.append(f"{tok[i]} -> {tok[j]}")
-flattened_att2 = flattened_att[flattened_att != 0]
-
-sns.heatmap(flattened_att2[np.newaxis, :], annot=True, fmt='.1g', cmap='Reds', cbar=False, xticklabels=tok2, yticklabels=False, ax=ax2)
-ax2.set_xticklabels(ax2.get_xticklabels(), rotation=75)
-
-plt.annotate('', xy=(0.5, 0.34), xytext=(0.5, 0.39), arrowprops=dict(facecolor='black', shrink=0.05), 
-             xycoords='figure fraction', textcoords='figure fraction')
-
-plt.tight_layout()
-plt.show()
+make_heatmap("Yet one more example", model, tokenizer)
 
 
 ###
