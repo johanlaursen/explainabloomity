@@ -53,7 +53,7 @@ tsv files containing prompts used for pruning
 
 `eval.py` deprecated, contains utility function used to run lmeval library
 
-`eval_mask.py` script used to prune model using masked method by loading pruning log. Not used in final results see `main.py`
+`eval_mask.py` script used to prune model using masked method by loading pruning log. Not used in final results (see `main.py`)
 
 `eval_mask_random.py` script used to randomly prune heads in model
 
