@@ -3,3 +3,5 @@ logs/
 models/
 attention_maps/
 pickles/
+random_similarity.txt
+opt_similarity.txt
