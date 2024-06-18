@@ -2,4 +2,4 @@ __pycache__/
 logs/
 models/
 attention_maps/
-test.py
+pickles/
