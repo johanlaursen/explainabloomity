@@ -11,6 +11,10 @@ Pickle files containing head importance for OPT model
 
 saved figures of results and analysis
 
+### jobs
+
+Slurm scripts used to run experiments on ITU's HPC
+
 ### lm-evaluation-harness
 
 github of lm-eval [Github link](https://github.com/EleutherAI/lm-evaluation-harness/tree/master)
