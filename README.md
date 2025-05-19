@@ -1,5 +1,5 @@
 # explainabloomity
-
+This is the repository for the Master's thesis [Exploring attention output similarity for duplication pruning of BLOOM and OPT](Attention_Head_Pruning.pdf)
 
 ## Folders
 
