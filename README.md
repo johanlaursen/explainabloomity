@@ -1,68 +1,103 @@
 # explainabloomity
-This is the repository for the Master's thesis [Exploring attention output similarity for duplication pruning of BLOOM and OPT](Attention_Head_Pruning.pdf)
 
-## Folders
+Exploring attention output similarity for duplication pruning of BLOOM and OPT.
 
-### head_importance
+This repository contains the code, data, and analysis for the Master's thesis:
+[Exploring attention output similarity for duplication pruning of BLOOM and OPT](Attention_Head_Pruning.pdf).
 
-Pickle files containing head importance for OPT model
+## Table of Contents
 
-### images
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Directory Structure](#directory-structure)
+- [Results and Analysis](#results-and-analysis)
 
-saved figures of results and analysis
+## Prerequisites
 
-### jobs
+- Conda (Anaconda or Miniconda)
+- CUDA-enabled GPU (for model evaluation)
 
-Slurm scripts used to run experiments on ITU's HPC
+## Installation
 
-### lm-evaluation-harness
+1. Create and activate the Conda environment:
 
-github of lm-eval [Github link](https://github.com/EleutherAI/lm-evaluation-harness/tree/master)
+   ```bash
+   conda env create -f environment.yml
+   conda activate thesis
+   ```
 
-### logs
+2. (Optional) Install additional Python dependencies via pip:
 
-Folder containing all SLURM logs of various runs. Kept locally due to file size.
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-### notebooks
+## Usage
 
-Contains all jupyter notebooks used for analysis and exploration
+### Pruning & Evaluation Pipeline
 
-### pruning_logs
+The primary pipeline is implemented in `main.py`. It performs duplication pruning, optional masked pruning,
+and evaluation on benchmark tasks using the EleutherAI LM Evaluation Harness.
 
-All pruning logs for each model experiment run to keep track of which heads were pruned. Used for analysis as well as determining which heads to prune using masked pruning.
+```bash
+python main.py <metric> <model_name> <output_path> <task> <group_metric> <prune_method>
+```
 
-### results
+- `<metric>`: distance metric for pruning (`euclidean`, `cosine`, or `random`)
+- `<model_name>`: HuggingFace model ID (e.g., `bigscience/bloom-560m`, `facebook/opt-13b`)
+- `<output_path>`: directory to save pruned models and evaluation logs
+- `<task>`: evaluation task (see `tasks/` for available TSVs)
+- `<group_metric>`: metric to group prompts (e.g., same as `<metric>` or `random`)
+- `<prune_method>`: strategy (`balanced` or `imbalanced`)
 
-Folder of results. File path to find specific result is:
-    - Lmeval metric used for evaluation
-    - pruning method i.e balanced/imbalanced
-    - Lmeval metric used for prompts for pruning
-    - Model pruned
+Example:
 
-### scripts
+```bash
+python main.py euclidean bigscience/bloom-560m ./results/bloom-560m euclidean balanced
+```
 
-Contains bash scripts used to run jobs and clean up logs.
+### Notebooks
 
-### tasks
+View and run Jupyter notebooks for data exploration and result visualization:
 
-tsv files containing prompts used for pruning
+```bash
+jupyter lab notebooks/
+```
 
-## Files
+### Utility Scripts
 
-`clustering.py` contains a couple of utility functions
+Simplify job submission and cleanup on HPC clusters using the `scripts/` directory:
 
-`eval.py` deprecated, contains utility function used to run lmeval library
+- `scripts/run_prune_jobs.sh`
+- `scripts/run_lmeval_jobs.sh`
+- `scripts/clean_logs_prune.sh`
+- `scripts/clean_logs_lmeval.sh`
 
-`eval_mask.py` script used to prune model using masked method by loading pruning log. Not used in final results (see `main.py`)
+## Directory Structure
 
-`eval_mask_random.py` script used to randomly prune heads in model
+```text
+├── Attention_Head_Pruning.pdf      # Master's thesis document
+├── environment.yml                 # Conda environment specification
+├── main.py                         # Pipeline for pruning & evaluation
+├── prune.py                        # Core pruning algorithms
+├── prompt.py                       # Prompt parsing utilities
+├── utils.py                        # Common utility functions
+├── clustering.py                   # Head clustering routines
+├── eval_mask*.py                   # Masked pruning evaluation scripts
+├── eval_f.py                       # Extended evaluation helpers
+├── prompt_testing.py               # Initial prompt experiments
+├── resultstable.py                 # Result table I/O
+├── head_importance/                # Pickle files of precomputed head importance
+├── tasks/                          # TSV files defining tasks/prompts
+├── images/                         # Generated figures and plots
+├── notebooks/                      # Jupyter notebooks for analyses
+├── pruning_logs/                   # Logs detailing pruned heads
+├── scripts/                        # Job submission & cleanup scripts
+└── jobs/                           # SLURM job scripts for experiments
+```
 
-`main.py` script used to duplicate prune and mask prune for final results
+## Results and Analysis
 
-`prompt_testing.py` script used for initial exploration
-
-`prune.py` contains all pruning functions for bloom and opt
-
-`resultstable.py` file for loading and saving results to csv from results folder
-
-`utils.py` contains all util functions used for pruning/visualization/analysis
+- Figures in `images/` illustrate pruning impacts across layers, models, and metrics.
+- Notebooks in `notebooks/` provide in-depth explorations.
